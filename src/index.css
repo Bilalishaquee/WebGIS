@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased;
+  }
+  
+  * {
+    @apply transition-colors duration-200;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 backdrop-blur-sm;
+    @apply hover:shadow-md transition-all duration-300;
+  }
+  
+  .card-gradient {
+    @apply bg-gradient-to-br from-white to-gray-50/50 rounded-xl shadow-lg border border-gray-200/60 p-6;
+    @apply hover:shadow-xl transition-all duration-300;
+  }
+  
+  .btn-primary {
+    @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg;
+    @apply hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md;
+    @apply transition-all duration-200 font-medium text-sm;
+    @apply active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-white text-gray-700 px-4 py-2.5 rounded-lg border border-gray-300;
+    @apply hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow;
+    @apply transition-all duration-200 font-medium text-sm;
+    @apply active:scale-95;
+  }
+  
+  .input-field {
+    @apply border border-gray-300 rounded-lg px-4 py-2.5 text-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500;
+    @apply transition-all duration-200 bg-white;
+  }
+  
+  .sidebar-gradient {
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  }
+  
+  .glass-effect {
+    @apply backdrop-blur-md bg-white/80 border border-gray-200/50;
+  }
+}
+
+/* Leaflet map container styles */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  border-radius: 0.75rem;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+}
+
+.custom-popup .leaflet-popup-content {
+  margin: 0 !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 640px) {
+  .card {
+    @apply p-4 rounded-lg;
+  }
+}

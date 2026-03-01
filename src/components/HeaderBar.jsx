@@ -1,0 +1,103 @@
+import { Droplet, Download } from 'lucide-react';
+
+const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, projectionYears, onProjectionChange, onExport }) => {
+  const handleExport = () => {
+    // Create export data
+    const exportData = {
+      scenario,
+      growthRate,
+      projectionYears,
+      timestamp: new Date().toISOString(),
+    };
+    
+    // Convert to JSON and download
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `water-demand-export-${Date.now()}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    
+    onExport();
+  };
+  
+  return (
+    <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm sticky top-0 z-30">
+      <div className="flex items-center gap-3">
+        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
+          <Droplet className="text-white" size={20} />
+        </div>
+        <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          Demand Dashboard
+        </h1>
+      </div>
+      
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
+          <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline px-2">Scenario:</span>
+          <button
+            onClick={() => onScenarioChange(90)}
+            className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 ${
+              scenario === 90
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            90 L/c
+          </button>
+          <button
+            onClick={() => onScenarioChange(100)}
+            className={`px-3 sm:px-4 py-1.5 rounded-md text-xs sm:text-sm font-medium transition-all duration-200 ${
+              scenario === 100
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                : 'bg-white text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            100 L/c
+          </button>
+        </div>
+        
+        <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-1.5">
+          <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline">Growth:</span>
+          <input
+            type="number"
+            value={growthRate}
+            onChange={(e) => {
+              const val = Number(e.target.value);
+              if (val >= 0 && val <= 10) {
+                onGrowthChange(val);
+              }
+            }}
+            className="w-12 sm:w-16 px-2 py-1 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white"
+            min="0"
+            max="10"
+            step="0.1"
+          />
+          <span className="text-xs sm:text-sm text-gray-600">%</span>
+        </div>
+        
+        <select
+          value={projectionYears}
+          onChange={(e) => onProjectionChange(Number(e.target.value))}
+          className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white hover:bg-gray-50 transition-colors"
+        >
+          {[1, 2, 3, 4, 5].map(years => (
+            <option key={years} value={years}>{years} Year{years > 1 ? 's' : ''}</option>
+          ))}
+        </select>
+        
+        <button
+          onClick={handleExport}
+          className="btn-primary flex items-center gap-2 text-xs sm:text-sm"
+        >
+          <Download size={14} />
+          <span className="hidden sm:inline">Export</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default HeaderBar;
