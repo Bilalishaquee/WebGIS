@@ -12,7 +12,7 @@ const MapView = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Filter Bar */}
-      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 flex-wrap">
+      <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3 flex items-center gap-2 sm:gap-4 flex-wrap lg:pl-6 pl-16">
         <select
           value={selectedLandUse}
           onChange={(e) => setSelectedLandUse(e.target.value)}

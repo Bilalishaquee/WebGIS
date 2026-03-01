@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import SidebarNavigation from './SidebarNavigation';
 import HeaderBar from './HeaderBar';
 
 const DashboardLayout = () => {
+  const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [scenario, setScenario] = useState(90);
   const [growthRate, setGrowthRate] = useState(2);
@@ -13,6 +14,9 @@ const DashboardLayout = () => {
     // Export functionality
     console.log('Exporting data...');
   };
+  
+  // Only show full header controls on Dashboard page
+  const isDashboardPage = location.pathname === '/';
   
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 overflow-hidden">
@@ -29,9 +33,18 @@ const DashboardLayout = () => {
           projectionYears={projectionYears}
           onProjectionChange={setProjectionYears}
           onExport={handleExport}
+          showFullControls={isDashboardPage}
         />
         <main className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 via-white to-gray-50">
-          <Outlet context={{ scenario, growthRate, projectionYears }} />
+          <Outlet context={{ 
+            scenario, 
+            growthRate, 
+            projectionYears,
+            setScenario,
+            setGrowthRate,
+            setProjectionYears,
+            handleExport
+          }} />
         </main>
       </div>
     </div>

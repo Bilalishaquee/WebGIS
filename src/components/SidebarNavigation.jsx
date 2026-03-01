@@ -57,13 +57,16 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
   
   return (
     <>
-      {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-        className="lg:hidden fixed top-4 left-4 z-50 p-2 bg-slate-800 text-white rounded-lg shadow-lg hover:bg-slate-700 transition-colors"
-      >
-        {isMobileOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
+      {/* Mobile Menu Button - Only show when sidebar is closed */}
+      {!isMobileOpen && (
+        <button
+          onClick={() => setIsMobileOpen(!isMobileOpen)}
+          className="lg:hidden fixed top-4 left-4 z-[60] p-2 bg-slate-800 text-white rounded-lg shadow-lg hover:bg-slate-700 transition-colors"
+          aria-label="Toggle menu"
+        >
+          <Menu size={24} />
+        </button>
+      )}
       
       {/* Mobile Overlay */}
       {isMobileOpen && (
@@ -81,7 +84,17 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <div className="p-6 border-b border-slate-700/50">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {/* Close button for mobile */}
+            {isMobileOpen && (
+              <button
+                onClick={() => setIsMobileOpen(false)}
+                className="lg:hidden p-1.5 text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-lg transition-colors"
+                aria-label="Close menu"
+              >
+                <X size={20} />
+              </button>
+            )}
             {(!isCollapsed || isMobileOpen) && (
               <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 NAVIGATION
@@ -96,7 +109,7 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
           ))}
           
           {(!isCollapsed || isMobileOpen) && (
-            <div className="mt-6 px-3 mb-2">
+            <div className="mt-4 sm:mt-6 px-3 mb-2">
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 DATA
               </h3>

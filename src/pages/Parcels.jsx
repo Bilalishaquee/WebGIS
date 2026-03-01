@@ -40,7 +40,7 @@ const Parcels = () => {
   
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/80 backdrop-blur-md border-b border-gray-200/60">
+      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/80 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4">
           Parcels
         </h2>
