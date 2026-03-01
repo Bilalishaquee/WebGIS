@@ -1,6 +1,14 @@
-import { Droplet, Download } from 'lucide-react';
+import { Droplet, Download, LogOut } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, projectionYears, onProjectionChange, onExport }) => {
+  const navigate = useNavigate();
+  
+  const handleLogout = () => {
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userName');
+    navigate('/login');
+  };
   const handleExport = () => {
     // Create export data
     const exportData = {
@@ -94,6 +102,15 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
         >
           <Download size={14} />
           <span className="hidden sm:inline">Export</span>
+        </button>
+        
+        <button
+          onClick={handleLogout}
+          className="btn-secondary flex items-center gap-2 text-xs sm:text-sm"
+          title="Logout"
+        >
+          <LogOut size={14} />
+          <span className="hidden sm:inline">Logout</span>
         </button>
       </div>
     </div>

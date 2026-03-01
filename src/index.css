@@ -103,9 +103,88 @@
   animation: fadeIn 0.3s ease-out;
 }
 
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(30px, -50px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.9);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 7s infinite;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
+}
+
+/* Professional Background Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) translateX(0px);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translateY(-30px) translateX(20px);
+    opacity: 0.15;
+  }
+}
+
+@keyframes gridMove {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(40px, 40px);
+  }
+}
+
 /* Responsive breakpoints */
 @media (max-width: 640px) {
   .card {
     @apply p-4 rounded-lg;
+  }
+  
+  /* Login/Signup responsive adjustments */
+  .login-container {
+    padding: 1rem;
+  }
+  
+  .login-card {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .login-card {
+    padding: 2rem;
+  }
+}
+
+/* Mobile-specific styles for auth pages */
+@media (max-width: 480px) {
+  .auth-form input,
+  .auth-form button {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+  
+  .social-buttons {
+    flex-direction: column;
+  }
+  
+  .social-buttons button {
+    width: 100%;
   }
 }
