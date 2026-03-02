@@ -28,7 +28,7 @@ const Settings = () => {
   
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/80 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16">
+      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/90 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16 animate-fade-in">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
           Settings
         </h2>
@@ -36,7 +36,7 @@ const Settings = () => {
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
         {/* General Settings */}
-        <div className="card-gradient animate-fade-in">
+        <div className="card-gradient opacity-0 animate-fade-in-up" style={{ animationDelay: '0ms', animationFillMode: 'forwards' }}>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">General</h3>
           <div className="space-y-4">
             <div>
@@ -81,7 +81,7 @@ const Settings = () => {
         </div>
         
         {/* Map Settings */}
-        <div className="card-gradient animate-fade-in">
+        <div className="card-gradient opacity-0 animate-fade-in-up" style={{ animationDelay: '80ms', animationFillMode: 'forwards' }}>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Map Settings</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -91,12 +91,12 @@ const Settings = () => {
               </div>
               <button
                 onClick={() => handleToggle('showConsumptionLegend')}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
                   settings.showConsumptionLegend ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     settings.showConsumptionLegend ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -110,12 +110,12 @@ const Settings = () => {
               </div>
               <button
                 onClick={() => handleToggle('enableParcelTooltips')}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
                   settings.enableParcelTooltips ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     settings.enableParcelTooltips ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -129,12 +129,12 @@ const Settings = () => {
               </div>
               <button
                 onClick={() => handleToggle('clusterMarkersAtLowZoom')}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
                   settings.clusterMarkersAtLowZoom ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     settings.clusterMarkersAtLowZoom ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -144,7 +144,7 @@ const Settings = () => {
         </div>
         
         {/* Notifications */}
-        <div className="card-gradient animate-fade-in">
+        <div className="card-gradient opacity-0 animate-fade-in-up" style={{ animationDelay: '160ms', animationFillMode: 'forwards' }}>
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Notifications</h3>
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -154,12 +154,12 @@ const Settings = () => {
               </div>
               <button
                 onClick={() => handleToggle('emailAlertsForHighConsumption')}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
                   settings.emailAlertsForHighConsumption ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     settings.emailAlertsForHighConsumption ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />
@@ -173,12 +173,12 @@ const Settings = () => {
               </div>
               <button
                 onClick={() => handleToggle('weeklySummaryReports')}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 ${
                   settings.weeklySummaryReports ? 'bg-blue-600' : 'bg-gray-300'
                 }`}
               >
                 <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
                     settings.weeklySummaryReports ? 'translate-x-6' : 'translate-x-1'
                   }`}
                 />

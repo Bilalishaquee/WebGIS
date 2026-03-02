@@ -2,7 +2,7 @@ import { Droplet, Calendar, TrendingUp, Users } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { formatNumber, generateForecastData } from '../utils/mockData';
 
-const SummaryCard = ({ icon: Icon, label, value, color = 'blue' }) => {
+const SummaryCard = ({ icon: Icon, label, value, color = 'blue', delay = 0 }) => {
   const colorClasses = {
     blue: 'bg-gradient-to-br from-blue-50 to-blue-100 text-blue-600',
     green: 'bg-gradient-to-br from-green-50 to-green-100 text-green-600',
@@ -11,13 +11,16 @@ const SummaryCard = ({ icon: Icon, label, value, color = 'blue' }) => {
   };
   
   return (
-    <div className="card-gradient animate-fade-in">
+    <div
+      className="card-gradient opacity-0 animate-fade-in-up"
+      style={{ animationDelay: `${delay}ms`, animationFillMode: 'forwards' }}
+    >
       <div className="flex items-center justify-between">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p className="text-xs sm:text-sm text-gray-600 mb-2 font-medium">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900">{value}</p>
+          <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{value}</p>
         </div>
-        <div className={`p-3 sm:p-4 rounded-xl shadow-sm ${colorClasses[color]}`}>
+        <div className={`p-3 sm:p-4 rounded-xl shadow-sm shrink-0 ${colorClasses[color]}`}>
           <Icon size={24} className="sm:w-6 sm:h-6" />
         </div>
       </div>
@@ -67,29 +70,36 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
           label="DAILY DEMAND"
           value={`${formatNumber(metrics.daily)} L`}
           color="blue"
+          delay={0}
         />
         <SummaryCard
           icon={Calendar}
           label="MONTHLY DEMAND"
           value={`${formatNumber(metrics.monthly)} L`}
           color="green"
+          delay={50}
         />
         <SummaryCard
           icon={TrendingUp}
           label="YEARLY DEMAND"
           value={`${formatNumber(metrics.yearly)} L`}
           color="purple"
+          delay={100}
         />
         <SummaryCard
           icon={Users}
           label="EST. POPULATION"
           value={metrics.population.toLocaleString()}
           color="orange"
+          delay={150}
         />
       </div>
       
       {/* Land-Use Breakdown */}
-      <div className="card-gradient animate-fade-in">
+      <div
+        className="card-gradient opacity-0 animate-fade-in-up"
+        style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
+      >
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Land-Use Breakdown</h3>
         <div className="flex items-center gap-6">
           <div className="flex-1">
@@ -128,7 +138,10 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
       </div>
       
       {/* Demand Forecast */}
-      <div className="card-gradient animate-fade-in">
+      <div
+        className="card-gradient opacity-0 animate-fade-in-up"
+        style={{ animationDelay: '280ms', animationFillMode: 'forwards' }}
+      >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">Demand Forecast</h3>
           <span className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded-md">{growthRate}% growth</span>
@@ -162,7 +175,10 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
       </div>
       
       {/* Scenario Comparison */}
-      <div className="card-gradient animate-fade-in">
+      <div
+        className="card-gradient opacity-0 animate-fade-in-up"
+        style={{ animationDelay: '360ms', animationFillMode: 'forwards' }}
+      >
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Scenario Comparison (Yearly)</h3>
         <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
           <BarChart data={scenarioComparison}>

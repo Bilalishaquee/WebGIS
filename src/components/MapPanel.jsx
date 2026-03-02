@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvents } from 'react-leaflet';
 import { getConsumptionLevel } from '../utils/mockData';
+import { TrendingUp } from 'lucide-react';
 
 // Component to detect mobile and prevent auto-popup
 const MapEvents = ({ onMapClick }) => {
@@ -12,7 +14,7 @@ const MapEvents = ({ onMapClick }) => {
   return null;
 };
 
-const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover }) => {
+const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRate, projectionYears }) => {
   const [isMobile, setIsMobile] = useState(false);
   const [selectedParcel, setSelectedParcel] = useState(null);
   
@@ -102,9 +104,29 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover }) => {
         })}
       </MapContainer>
       
+      {/* Growth projection overlay — proposal: "Growth projection overlay" on map */}
+      {(growthRate != null || projectionYears != null) && (
+        <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md rounded-xl shadow-lg p-3 border border-gray-200/60 animate-fade-in-up max-w-[180px]">
+          <div className="flex items-center gap-2 mb-2">
+            <TrendingUp size={16} className="text-blue-600 shrink-0" />
+            <span className="text-xs font-semibold text-gray-900">Growth projection</span>
+          </div>
+          <div className="text-xs text-gray-600 space-y-1">
+            {growthRate != null && <p><span className="font-medium">Growth:</span> {growthRate}%/year</p>}
+            {projectionYears != null && <p><span className="font-medium">Horizon:</span> {projectionYears} year{projectionYears !== 1 ? 's' : ''}</p>}
+          </div>
+          <Link
+            to="/analytics"
+            className="mt-2 block text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            View 5-year forecast →
+          </Link>
+        </div>
+      )}
+      
       {/* Mobile Parcel Info Card */}
       {isMobile && selectedParcel && (
-        <div className="absolute top-4 left-4 right-4 z-[1000] bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-4 border border-gray-200/60 animate-fade-in">
+        <div className="absolute top-4 left-4 right-4 z-[1000] bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-4 border border-gray-200/60 animate-fade-in-up">
           <div className="flex items-start justify-between mb-2">
             <div className="font-bold text-sm text-gray-900">{selectedParcel.id}</div>
             <button
@@ -129,7 +151,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover }) => {
       )}
       
       {/* Consumption Level Legend */}
-      <div className={`absolute bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-3 sm:p-4 border border-gray-200/60 z-10 animate-fade-in ${
+      <div className={`absolute bg-white/95 backdrop-blur-md rounded-xl shadow-xl p-3 sm:p-4 border border-gray-200/60 z-10 animate-fade-in-up ${
         isMobile && selectedParcel 
           ? 'bottom-20 left-4 right-4' 
           : 'bottom-4 right-4'

@@ -40,7 +40,7 @@ const Parcels = () => {
   
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/80 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16">
+      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/90 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16 animate-fade-in">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-4">
           Parcels
         </h2>
@@ -68,7 +68,7 @@ const Parcels = () => {
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200/60 overflow-hidden opacity-0 animate-fade-in-up" style={{ animationDelay: '80ms', animationFillMode: 'forwards' }}>
           <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full">
             <thead className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200">
@@ -98,7 +98,7 @@ const Parcels = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedParcels.map((parcel) => (
-                <tr key={parcel.id} className="hover:bg-gray-50/50 transition-colors">
+                <tr key={parcel.id} className="hover:bg-gray-50/80 transition-colors duration-200">
                   <td className="px-3 sm:px-6 py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
                     {parcel.id}
                   </td>

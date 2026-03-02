@@ -35,23 +35,28 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
     return location.pathname.startsWith(path);
   };
   
-  const NavLink = ({ item, active }) => {
+  const NavLink = ({ item, active, index }) => {
     const Icon = item.icon;
     return (
-      <Link
-        to={item.path}
-        onClick={() => setIsMobileOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all duration-200 group ${
-          active 
-            ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' 
-            : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
-        }`}
+      <div
+        className="opacity-0 animate-fade-in"
+        style={{ animationDelay: `${index * 0.04}s`, animationFillMode: 'forwards' }}
       >
-        <Icon size={20} className={active ? 'scale-110' : 'group-hover:scale-110 transition-transform'} />
-        {(!isCollapsed || isMobileOpen) && (
-          <span className="text-sm font-medium">{item.label}</span>
-        )}
-      </Link>
+        <Link
+          to={item.path}
+          onClick={() => setIsMobileOpen(false)}
+          className={`flex items-center gap-3 px-4 py-3 rounded-xl mb-2 transition-all duration-200 group ${
+            active 
+              ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30' 
+              : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+          }`}
+        >
+          <Icon size={20} className={`shrink-0 ${active ? 'scale-110' : 'group-hover:scale-110'} transition-transform`} />
+          {(!isCollapsed || isMobileOpen) && (
+            <span className="text-sm font-medium">{item.label}</span>
+          )}
+        </Link>
+      </div>
     );
   };
   
@@ -71,18 +76,21 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
       {/* Mobile Overlay */}
       {isMobileOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          className="lg:hidden fixed inset-0 bg-black/50 z-40 animate-fade-in"
           onClick={() => setIsMobileOpen(false)}
+          aria-hidden="true"
         />
       )}
       
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         sidebar-gradient text-white h-screen fixed left-0 top-0 
-        transition-all duration-300 z-40 flex flex-col
+        transition-[transform,width] duration-300 ease-out z-40 flex flex-col
         ${isCollapsed ? 'w-16' : 'w-64'}
         ${isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
+      `}
+      >
         <div className="p-6 border-b border-slate-700/50">
           <div className="flex items-center gap-3">
             {/* Close button for mobile */}
@@ -104,20 +112,20 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
         </div>
         
         <nav className="flex-1 overflow-y-auto p-3 custom-scrollbar">
-          {navItems.map((item) => (
-            <NavLink key={item.path} item={item} active={isActive(item.path)} />
+          {navItems.map((item, index) => (
+            <NavLink key={item.path} item={item} active={isActive(item.path)} index={index} />
           ))}
           
           {(!isCollapsed || isMobileOpen) && (
-            <div className="mt-4 sm:mt-6 px-3 mb-2">
+            <div className="mt-4 sm:mt-6 px-3 mb-2 opacity-0 animate-fade-in" style={{ animationDelay: '0.16s', animationFillMode: 'forwards' }}>
               <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
                 DATA
               </h3>
             </div>
           )}
           
-          {dataItems.map((item) => (
-            <NavLink key={item.path} item={item} active={isActive(item.path)} />
+          {dataItems.map((item, index) => (
+            <NavLink key={item.path} item={item} active={isActive(item.path)} index={navItems.length + 1 + index} />
           ))}
         </nav>
         
@@ -131,7 +139,7 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
                 : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
             }`}
           >
-            <Settings size={20} />
+            <Settings size={20} className="shrink-0" />
             {(!isCollapsed || isMobileOpen) && (
               <span className="text-sm font-medium">Settings</span>
             )}

@@ -3,10 +3,12 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+  html {
+    scroll-behavior: smooth;
   }
-  
+  body {
+    @apply bg-gray-50 text-gray-900 antialiased font-sans;
+  }
   * {
     @apply transition-colors duration-200;
   }
@@ -15,41 +17,42 @@
 @layer components {
   .card {
     @apply bg-white rounded-xl shadow-sm border border-gray-200/60 p-6 backdrop-blur-sm;
-    @apply hover:shadow-md transition-all duration-300;
+    @apply hover:shadow-md transition-all duration-300 ease-out;
   }
-  
   .card-gradient {
     @apply bg-gradient-to-br from-white to-gray-50/50 rounded-xl shadow-lg border border-gray-200/60 p-6;
-    @apply hover:shadow-xl transition-all duration-300;
+    @apply hover:shadow-xl transition-all duration-300 ease-out;
   }
-  
   .btn-primary {
     @apply bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg;
     @apply hover:from-blue-700 hover:to-blue-800 shadow-sm hover:shadow-md;
-    @apply transition-all duration-200 font-medium text-sm;
-    @apply active:scale-95;
+    @apply transition-all duration-200 font-medium text-sm active:scale-[0.98];
   }
-  
   .btn-secondary {
     @apply bg-white text-gray-700 px-4 py-2.5 rounded-lg border border-gray-300;
     @apply hover:bg-gray-50 hover:border-gray-400 shadow-sm hover:shadow;
-    @apply transition-all duration-200 font-medium text-sm;
-    @apply active:scale-95;
+    @apply transition-all duration-200 font-medium text-sm active:scale-[0.98];
   }
-  
   .input-field {
     @apply border border-gray-300 rounded-lg px-4 py-2.5 text-sm;
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500;
     @apply transition-all duration-200 bg-white;
   }
-  
   .sidebar-gradient {
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   }
-  
   .glass-effect {
     @apply backdrop-blur-md bg-white/80 border border-gray-200/50;
   }
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 0.05s; }
+  .stagger-2 { animation-delay: 0.1s; }
+  .stagger-3 { animation-delay: 0.15s; }
+  .stagger-4 { animation-delay: 0.2s; }
+  .stagger-5 { animation-delay: 0.25s; }
+  .stagger-6 { animation-delay: 0.3s; }
+  .stagger-7 { animation-delay: 0.35s; }
+  .stagger-8 { animation-delay: 0.4s; }
 }
 
 /* Leaflet map container styles */
@@ -74,7 +77,6 @@
   .leaflet-popup {
     display: none !important;
   }
-  
   .leaflet-popup-tip,
   .leaflet-popup-content-wrapper {
     display: none !important;
@@ -112,7 +114,52 @@
 }
 
 .animate-fade-in {
-  animation: fadeIn 0.3s ease-out;
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.45s ease-out forwards;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.35s ease-out forwards;
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.35s ease-out forwards;
 }
 
 @keyframes blob {
@@ -163,17 +210,25 @@
   }
 }
 
+/* Sidebar overlay transition */
+.sidebar-overlay {
+  @apply transition-opacity duration-300 ease-out;
+}
+
+/* Page content wrapper for consistent entrance */
+.page-content {
+  @apply animate-fade-in-up opacity-0;
+  animation-fill-mode: forwards;
+}
+
 /* Responsive breakpoints */
 @media (max-width: 640px) {
   .card {
     @apply p-4 rounded-lg;
   }
-  
-  /* Login/Signup responsive adjustments */
   .login-container {
     padding: 1rem;
   }
-  
   .login-card {
     padding: 1.5rem;
   }
@@ -189,13 +244,11 @@
 @media (max-width: 480px) {
   .auth-form input,
   .auth-form button {
-    font-size: 16px; /* Prevents zoom on iOS */
+    font-size: 16px;
   }
-  
   .social-buttons {
     flex-direction: column;
   }
-  
   .social-buttons button {
     width: 100%;
   }

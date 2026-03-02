@@ -1,25 +1,34 @@
-import { Droplet, Download, LogOut } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Droplet, Download, LogOut, ChevronRight } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+const PAGE_TITLES = {
+  '/': 'Dashboard',
+  '/map': 'Map View',
+  '/analytics': 'Analytics',
+  '/chat': 'Chat',
+  '/parcels': 'Parcels',
+  '/settings': 'Settings',
+  '/data-sources': 'Data Sources',
+};
 
 const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, projectionYears, onProjectionChange, onExport, showFullControls = true }) => {
   const navigate = useNavigate();
-  
+  const location = useLocation();
+  const pageTitle = PAGE_TITLES[location.pathname] || 'Dashboard';
+
   const handleLogout = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('userName');
     navigate('/login');
   };
-  
+
   const handleExport = () => {
-    // Create export data
     const exportData = {
       scenario,
       growthRate,
       projectionYears,
       timestamp: new Date().toISOString(),
     };
-    
-    // Convert to JSON and download
     const dataStr = JSON.stringify(exportData, null, 2);
     const dataBlob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(dataBlob);
@@ -28,29 +37,32 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
     link.download = `water-demand-export-${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    
-    onExport();
+    onExport?.();
   };
-  
-  // Don't show header at all if not Dashboard page
-  if (!showFullControls) {
-    return null;
-  }
-  
   return (
-    <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-sm sticky top-0 z-30 lg:pl-6 pl-16">
-      <div className="flex items-center gap-3">
-        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg">
+    <header className="bg-white/90 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 shadow-sm sticky top-0 z-30 lg:pl-6 pl-16 animate-fade-in">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md shrink-0 transition-transform hover:scale-105">
           <Droplet className="text-white" size={20} />
         </div>
-        <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-          Demand Dashboard
-        </h1>
+        <div className="min-w-0">
+          {showFullControls ? (
+            <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent truncate">
+              Demand Dashboard
+            </h1>
+          ) : (
+            <div className="flex items-center gap-2 text-gray-600">
+              <span className="text-sm font-medium truncate">Demand Dashboard</span>
+              <ChevronRight size={16} className="text-gray-400 shrink-0" />
+              <span className="text-sm font-semibold text-gray-900 truncate">{pageTitle}</span>
+            </div>
+          )}
+        </div>
       </div>
-      
-      {/* Full Controls - Only show on Dashboard page */}
-      {showFullControls && (
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+
+      <div className="flex items-center gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
+        {showFullControls && (
+          <>
           <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
             <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline px-2">Scenario:</span>
             <button
@@ -104,25 +116,25 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
             ))}
           </select>
           
-          <button
-            onClick={handleExport}
-            className="btn-primary flex items-center gap-2 text-xs sm:text-sm"
-          >
-            <Download size={14} />
-            <span className="hidden sm:inline">Export</span>
-          </button>
-          
-          <button
-            onClick={handleLogout}
-            className="btn-secondary flex items-center gap-2 text-xs sm:text-sm"
-            title="Logout"
-          >
-            <LogOut size={14} />
-            <span className="hidden sm:inline">Logout</span>
-          </button>
-        </div>
-      )}
-    </div>
+            <button
+              onClick={handleExport}
+              className="btn-primary flex items-center gap-2 text-xs sm:text-sm"
+            >
+              <Download size={14} />
+              <span className="hidden sm:inline">Export</span>
+            </button>
+          </>
+        )}
+        <button
+          onClick={handleLogout}
+          className="btn-secondary flex items-center gap-2 text-xs sm:text-sm ml-auto sm:ml-0"
+          title="Logout"
+        >
+          <LogOut size={14} />
+          <span className="hidden sm:inline">Logout</span>
+        </button>
+      </div>
+    </header>
   );
 };
 

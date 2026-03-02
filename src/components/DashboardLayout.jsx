@@ -24,7 +24,7 @@ const DashboardLayout = () => {
         isCollapsed={isSidebarCollapsed} 
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)} 
       />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarCollapsed ? 'ml-16' : 'lg:ml-64'} ml-0`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ease-out ${isSidebarCollapsed ? 'ml-16' : 'lg:ml-64'} ml-0`}>
         <HeaderBar
           scenario={scenario}
           onScenarioChange={setScenario}
