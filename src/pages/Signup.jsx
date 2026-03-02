@@ -154,8 +154,8 @@ const Signup = () => {
         </div>
 
         {/* Signup Card */}
-        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-5 sm:p-6 md:p-8 animate-fade-in max-h-[90vh] overflow-y-auto custom-scrollbar">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-5 sm:p-6 md:p-8 animate-fade-in-up max-h-[90vh] overflow-y-auto custom-scrollbar">
+          <form onSubmit={handleSubmit} className="space-y-5 auth-form">
             {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
@@ -343,7 +343,7 @@ const Signup = () => {
             </div>
 
             {/* Social Signup Button */}
-            <div className="flex justify-center">
+            <div className="flex justify-center social-buttons">
               <button
                 type="button"
                 className="flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700 w-full sm:w-auto"

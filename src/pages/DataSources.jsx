@@ -59,7 +59,7 @@ const DataSources = () => {
   
   return (
     <div className="h-full flex flex-col">
-      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/80 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16">
+      <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/90 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16 animate-fade-in">
         <h2 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
           Data Sources
         </h2>
@@ -69,7 +69,11 @@ const DataSources = () => {
         {dataSources.map((source, index) => {
           const Icon = source.icon;
           return (
-            <div key={index} className="card-gradient animate-fade-in">
+            <div
+              key={index}
+              className="card-gradient opacity-0 animate-fade-in-up hover:shadow-xl transition-shadow duration-300"
+              style={{ animationDelay: `${index * 80}ms`, animationFillMode: 'forwards' }}
+            >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
                   <div className={`p-3 rounded-lg ${getIconColor(source.color)}`}>

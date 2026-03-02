@@ -25,10 +25,10 @@ const Dashboard = () => {
   
   return (
     <div className="h-full flex flex-col lg:flex-row overflow-hidden">
-      {/* Main Map Section - 60% width on desktop, full on mobile */}
-      <div className={`flex-1 flex flex-col ${showAnalytics ? 'hidden lg:flex' : 'flex'} lg:w-3/5 min-w-0`}>
+      {/* Main Map Section */}
+      <div className={`flex-1 flex flex-col min-w-0 ${showAnalytics ? 'hidden lg:flex' : 'flex'} lg:w-3/5`}>
         {/* Filter Bar */}
-        <div className="bg-white/80 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3">
+        <div className="bg-white/90 backdrop-blur-md border-b border-gray-200/60 px-4 sm:px-6 py-3 animate-fade-in">
           <div className="flex items-center gap-2 sm:gap-4 flex-wrap lg:flex-nowrap">
             <select
               value={selectedLandUse}
@@ -44,7 +44,6 @@ const Dashboard = () => {
               <option>Baseline Consumption</option>
             </select>
             
-            {/* Mobile Toggle Button */}
             <button
               onClick={() => setShowAnalytics(!showAnalytics)}
               className="lg:hidden btn-secondary text-xs flex items-center gap-2 flex-1 lg:flex-initial"
@@ -55,17 +54,19 @@ const Dashboard = () => {
         </div>
         
         {/* Map Container */}
-        <div className="flex-1 relative min-h-[300px]">
+        <div className="flex-1 relative min-h-[280px] sm:min-h-[300px]">
           <MapPanel
             parcels={parcels}
             scenario={scenario}
             selectedLandUse={selectedLandUse}
             onParcelHover={setHoveredParcel}
+            growthRate={growthRate}
+            projectionYears={projectionYears}
           />
         </div>
       </div>
       
-      {/* Analytics Panel - 40% width on desktop, full on mobile when toggled */}
+      {/* Analytics Panel */}
       <div className={`bg-transparent border-l border-gray-200/60 lg:w-2/5 min-w-0 overflow-hidden ${showAnalytics ? 'flex flex-col' : 'hidden lg:flex'}`}>
         <AnalyticsPanel
           metrics={metrics}
