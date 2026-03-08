@@ -1,0 +1,27 @@
+# Dependencies and local dev
+.venv
+venv
+env
+.env
+.env.*
+*.db
+__pycache__
+*.py[cod]
+.pytest_cache
+.coverage
+htmlcov
+*.log
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+
+# Docs / misc (not needed in image)
+*.md
+!data/README.md

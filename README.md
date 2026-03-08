@@ -1,16 +1,17 @@
 # Neighborhood Water Demand Dashboard
 
-A professional, modern, data-driven WebGIS dashboard for analyzing water consumption across 360-400 parcels using spatial data and forecasting models.
+A map-based WebGIS dashboard for **consumption analysis**, **predictions**, and **visualization** of water demand across ~360–400 parcels. It uses **estimated average daily consumption per person** (90–100 L/person/day, standard values for informal urban areas), with no real monthly meter data.
+
+See **[PROJECT_SPEC.md](./PROJECT_SPEC.md)** for the client brief and **[PROJECT_BRIEF_CHECKLIST.md](./PROJECT_BRIEF_CHECKLIST.md)** for how each requirement is implemented.
 
 ## Features
 
-- **Interactive Map View**: Leaflet-based map with parcel-level visualization and color-coded consumption levels
-- **Analytics Dashboard**: Comprehensive metrics, charts, and forecasts
-- **Data Management**: Parcel data table with search and filtering
-- **AI Chat Assistant**: Interactive Q&A interface for water demand queries
-- **Scenario Comparison**: Compare different consumption scenarios (90L/c vs 100L/c)
-- **Forecast Visualization**: 5-year projection with growth rate adjustments
-- **Settings Management**: Configurable dashboard settings
+- **Consumption analysis**: Per-parcel and neighborhood totals; consumption by parcel category (residential/commercial/mixed-use)
+- **Predictions**: Future water demand (population growth) and demand-trend views
+- **Map-based dashboard**: Interactive map with parcel attributes and consumption distribution; forecast charts
+- **AI Chat Assistant**: Q&A about total consumption, consumption by parcel type, growth projections, scenario comparisons
+- **Data management**: Parcel table, filters, upload (Data Sources)
+- **Settings**: Scenario (90 vs 100 L/c), growth rate, projection years
 
 ## Tech Stack
 
@@ -24,20 +25,44 @@ A professional, modern, data-driven WebGIS dashboard for analyzing water consump
 
 ## Installation
 
+### Frontend
+
 1. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Start development server:
+2. (Optional) Set API URL. Copy `.env.example` to `.env` and set `VITE_API_URL` if the API is not at `http://localhost:8000`.
+
+3. Start development server:
 ```bash
 npm run dev
 ```
 
-3. Build for production:
+4. Build for production:
 ```bash
 npm run build
 ```
+
+### Backend (API)
+
+The dashboard expects a FastAPI backend for data and auth. See **backend/README.md** for setup.
+
+1. From project root:
+```bash
+cd backend
+python3 -m venv venv
+source venv/bin/activate   # or venv\Scripts\activate on Windows
+pip install -r requirements.txt
+python scripts/seed_sanmiguel.py   # seeds from WebGIS/San Miguel 2/ (or creates parcels if no data)
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+2. Open API docs: http://localhost:8000/docs
+
+- **Authentication**: Register and log in via the dashboard; the frontend stores the JWT and sends it on API requests.
+- **Units**: All consumption values from the API are in liters; the UI displays **cubic meters (m³)**. Consumption is estimated from **population and land-use** using **90 and 100 L/person/day** (informal urban standard).
+- **Parcel editing**: Select a parcel on the map or in the Parcels table, click Edit, change attributes, and Save; the map and analytics update automatically.
 
 ## Project Structure
 
@@ -58,7 +83,7 @@ src/
 │   ├── Settings.jsx
 │   └── DataSources.jsx
 ├── utils/              # Utility functions
-│   └── mockData.js
+│   └── consumption.js
 ├── App.jsx             # Main app component
 ├── main.jsx            # Entry point
 └── index.css           # Global styles
@@ -72,15 +97,13 @@ src/
 - **Chat** (`/chat`) - AI assistant interface
 - **Parcels** (`/parcels`) - Data table with search and filters
 - **Settings** (`/settings`) - Configuration options
-- **Data Sources** (`/data-sources`) - Data source management
+- **Data Sources** (`/data-sources`) - Upload parcels (CSV/JSON); data comes from **WebGIS/San Miguel 2/** or uploads.
 
-## Mock Data
+## Data and consumption model
 
-The application uses generated mock data for 380 parcels with:
-- Random population (2-15 per parcel)
-- Mixed land-use types (Residential, Commercial, Mixed-use)
-- Calculated consumption based on scenarios (90L/c and 100L/c)
-- Geographic coordinates for map visualization
+- **Parcels**: Loaded from the API (database seeded from **WebGIS/San Miguel 2/** — see `data/README.md` — or from Data Sources → Upload). Attributes: parcel ID, land-use type, population, coordinates.
+- **Consumption**: Estimated at parcel level as **population × L/person/day × land-use coefficient** (90 or 100 L/c; Residential 1.0, Commercial 1.2, Mixed-use 1.1). No real meter data.
+- **Predictions**: Simple growth model (compound growth on total demand) and forecast chart; map overlay for growth scenario.
 
 ## Features in Detail
 

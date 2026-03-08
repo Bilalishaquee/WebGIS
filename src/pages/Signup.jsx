@@ -76,15 +76,23 @@ const Signup = () => {
     }
     
     setIsLoading(true);
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // Store auth token (in real app, this would come from API)
-      localStorage.setItem('authToken', 'demo-token');
-      localStorage.setItem('userName', formData.name);
+    try {
+      const { register } = await import('../api/client');
+      const data = await register({
+        email: formData.email,
+        password: formData.password,
+        name: formData.name || undefined,
+        organization: formData.organization || undefined,
+      });
+      localStorage.setItem('authToken', data.access_token);
+      localStorage.setItem('userName', data.user?.name || formData.name || formData.email);
+      if (data.user?.id) localStorage.setItem('userId', String(data.user.id));
       navigate('/');
-    }, 1500);
+    } catch (err) {
+      setErrors({ form: err.message || 'Registration failed' });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -156,6 +164,9 @@ const Signup = () => {
         {/* Signup Card */}
         <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-5 sm:p-6 md:p-8 animate-fade-in-up max-h-[90vh] overflow-y-auto custom-scrollbar">
           <form onSubmit={handleSubmit} className="space-y-5 auth-form">
+            {errors.form && (
+              <p className="text-sm text-red-600 bg-red-50 p-3 rounded-lg">{errors.form}</p>
+            )}
             {/* Name Field */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">

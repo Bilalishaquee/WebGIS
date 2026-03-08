@@ -15,8 +15,8 @@ const DashboardLayout = () => {
     console.log('Exporting data...');
   };
   
-  // Only show full header controls on Dashboard page
-  const isDashboardPage = location.pathname === '/';
+  // Show full header controls on Dashboard and Analytics so growth/years can be changed from either page
+  const showFullControls = location.pathname === '/' || location.pathname === '/analytics';
   
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 overflow-hidden">
@@ -33,7 +33,7 @@ const DashboardLayout = () => {
           projectionYears={projectionYears}
           onProjectionChange={setProjectionYears}
           onExport={handleExport}
-          showFullControls={isDashboardPage}
+          showFullControls={showFullControls}
         />
         <main className="flex-1 overflow-auto bg-gradient-to-br from-gray-50 via-white to-gray-50">
           <Outlet context={{ 

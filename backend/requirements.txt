@@ -1,0 +1,23 @@
+# FastAPI backend - Water Demand Dashboard
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database (SQLite by default; add psycopg2-binary for PostgreSQL)
+sqlalchemy[asyncio]>=2.0.25
+aiosqlite==0.19.0
+psycopg2-binary>=2.9  # optional, for PostgreSQL (sync fallback)
+asyncpg>=0.29  # for PostgreSQL async on Render
+
+# Auth
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.1.1
+
+# Env & validation (use versions with prebuilt wheels for Python 3.13)
+pydantic[email]>=2.5,<3
+pydantic-settings>=2.0
+email-validator>=2.0
+
+# Optional: read shapefile from San Miguel .aprx data (Building.shp)
+pyshp>=2.3

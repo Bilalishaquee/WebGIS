@@ -8,6 +8,7 @@ import {
   Building2, 
   Database, 
   Settings,
+  User,
   Menu,
   X
 } from 'lucide-react';
@@ -129,7 +130,21 @@ const SidebarNavigation = ({ isCollapsed, onToggle }) => {
           ))}
         </nav>
         
-        <div className="p-4 border-t border-slate-700/50">
+        <div className="p-4 border-t border-slate-700/50 space-y-2">
+          <Link
+            to="/profile"
+            onClick={() => setIsMobileOpen(false)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+              location.pathname === '/profile'
+                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg shadow-blue-500/30'
+                : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+            }`}
+          >
+            <User size={20} className="shrink-0" />
+            {(!isCollapsed || isMobileOpen) && (
+              <span className="text-sm font-medium">Profile</span>
+            )}
+          </Link>
           <Link
             to="/settings"
             onClick={() => setIsMobileOpen(false)}
