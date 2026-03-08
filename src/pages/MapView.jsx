@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import MapPanel from '../components/MapPanel';
-import { generateParcels } from '../utils/mockData';
+import { useParcels } from '../hooks/useApi';
 
 const MapView = () => {
-  const { scenario, growthRate, projectionYears } = useOutletContext();
+  const { scenario, setScenario, growthRate, projectionYears } = useOutletContext();
   const [selectedLandUse, setSelectedLandUse] = useState('All');
   
-  const parcels = useMemo(() => generateParcels(), []);
+  const { parcels, loading, error, refetch } = useParcels(selectedLandUse, 0, 500);
   
   return (
     <div className="h-full flex flex-col">
@@ -23,20 +23,30 @@ const MapView = () => {
           <option value="Commercial">Commercial</option>
           <option value="Mixed-use">Mixed-use</option>
         </select>
-        <select className="input-field text-xs sm:text-sm">
-          <option>Baseline Consumption</option>
+        <select
+          value={scenario}
+          onChange={(e) => setScenario(Number(e.target.value))}
+          className="input-field text-xs sm:text-sm"
+        >
+          <option value={90}>Baseline (90 L/c)</option>
+          <option value={100}>High estimate (100 L/c)</option>
         </select>
       </div>
       
       {/* Full Map */}
       <div className="flex-1 relative min-h-[300px]">
-        <MapPanel
-          parcels={parcels}
-          scenario={scenario}
-          selectedLandUse={selectedLandUse}
-          growthRate={growthRate}
-          projectionYears={projectionYears}
-        />
+        {loading && parcels.length === 0 ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100/50 rounded-xl"><span className="text-gray-600">Loading map…</span></div>
+        ) : (
+          <MapPanel
+            parcels={parcels}
+            scenario={scenario}
+            selectedLandUse={selectedLandUse}
+            growthRate={growthRate}
+            projectionYears={projectionYears}
+            onParcelUpdated={refetch}
+          />
+        )}
       </div>
     </div>
   );

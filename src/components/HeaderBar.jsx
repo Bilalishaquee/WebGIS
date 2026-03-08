@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   '/chat': 'Chat',
   '/parcels': 'Parcels',
   '/settings': 'Settings',
+  '/profile': 'Profile',
   '/data-sources': 'Data Sources',
 };
 
@@ -93,9 +94,12 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
               type="number"
               value={growthRate}
               onChange={(e) => {
-                const val = Number(e.target.value);
-                if (val >= 0 && val <= 10) {
-                  onGrowthChange(val);
+                const raw = e.target.value;
+                if (raw === '') return;
+                const val = Number(raw);
+                if (!Number.isNaN(val)) {
+                  const clamped = Math.min(10, Math.max(0, val));
+                  onGrowthChange(clamped);
                 }
               }}
               className="w-12 sm:w-16 px-2 py-1 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white"

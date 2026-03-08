@@ -1,0 +1,16 @@
+# Render — backend API only
+# Deploy: Connect your repo in Render, create a Web Service, set Root Directory to "backend" (or "WebGIS/backend" if repo root is parent).
+
+services:
+  - type: web
+    name: water-demand-api
+    runtime: python
+
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      # CORS_ORIGINS: set in Render dashboard to your frontend URL(s), e.g. https://your-frontend.onrender.com
+      # DATABASE_URL: optional; add a PostgreSQL database in Render and paste its Internal Database URL here (or use SQLite — data ephemeral)
