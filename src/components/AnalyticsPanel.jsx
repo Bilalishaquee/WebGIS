@@ -1,6 +1,6 @@
 import { Droplet, Calendar, TrendingUp, Users } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { formatNumber, generateForecastData } from '../utils/mockData';
+import { formatM3 } from '../api/client';
 
 const SummaryCard = ({ icon: Icon, label, value, color = 'blue', delay = 0 }) => {
   const colorClasses = {
@@ -12,41 +12,45 @@ const SummaryCard = ({ icon: Icon, label, value, color = 'blue', delay = 0 }) =>
   
   return (
     <div
-      className="card-gradient opacity-0 animate-fade-in-up"
+      className="card-gradient opacity-0 animate-fade-in-up min-w-0 p-2.5 sm:p-3"
       style={{ animationDelay: `${delay}ms`, animationFillMode: 'forwards' }}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-xs sm:text-sm text-gray-600 mb-2 font-medium">{label}</p>
-          <p className="text-xl sm:text-2xl font-bold text-gray-900 truncate">{value}</p>
+          <p className="text-[10px] sm:text-xs text-gray-600 font-medium truncate">{label}</p>
+          <p className="text-sm sm:text-base font-bold text-gray-900 truncate" title={value}>{value}</p>
         </div>
-        <div className={`p-3 sm:p-4 rounded-xl shadow-sm shrink-0 ${colorClasses[color]}`}>
-          <Icon size={24} className="sm:w-6 sm:h-6" />
+        <div className={`p-1.5 sm:p-2 rounded-lg shrink-0 ${colorClasses[color]}`}>
+          <Icon size={16} className="sm:w-5 sm:h-5" />
         </div>
       </div>
     </div>
   );
 };
 
-const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, projectionYears }) => {
+const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, projectionYears, forecastData: apiForecast, loading, selectedLandUse }) => {
   const COLORS = ['#3b82f6', '#14b8a6', '#f97316'];
-  
-  const pieData = landUseBreakdown.map(item => ({
+  const forecastKey = `forecast-${growthRate ?? 2}-${projectionYears ?? 5}`;
+
+  if (loading || !metrics) {
+    return (
+      <div className="h-full overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+        <span className="text-gray-500">Loading analytics…</span>
+      </div>
+    );
+  }
+
+  const landUseList = Array.isArray(landUseBreakdown) ? landUseBreakdown : [];
+  const pieData = landUseList.map(item => ({
     name: item.type,
     value: parseFloat(item.percentage),
     consumption: item.consumption,
   }));
-  
-  // Calculate base yearly values for both scenarios
+
   const baseYearly90 = metrics.yearly * 0.9;
   const baseYearly100 = metrics.yearly;
-  
-  const forecastData = generateForecastData(
-    baseYearly90,
-    baseYearly100,
-    growthRate,
-    projectionYears
-  );
+
+  const forecastData = Array.isArray(apiForecast) && apiForecast.length > 0 ? apiForecast : [];
   
   const scenarioComparison = [
     {
@@ -62,33 +66,38 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
   const difference = baseYearly100 - baseYearly90;
   
   return (
-    <div className="h-full overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-transparent">
+    <div className="h-full overflow-auto p-4 sm:p-6 space-y-4 sm:space-y-6 bg-transparent min-w-0">
+      {selectedLandUse && selectedLandUse !== 'All' && (
+        <p className="text-xs font-medium text-blue-700 bg-blue-50 px-2 py-1 rounded-md w-fit">
+          Filter: {selectedLandUse}
+        </p>
+      )}
       {/* Summary Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3">
         <SummaryCard
           icon={Droplet}
-          label="DAILY DEMAND"
-          value={`${formatNumber(metrics.daily)} L`}
+          label="Daily"
+          value={formatM3(metrics.daily)}
           color="blue"
           delay={0}
         />
         <SummaryCard
           icon={Calendar}
-          label="MONTHLY DEMAND"
-          value={`${formatNumber(metrics.monthly)} L`}
+          label="Monthly"
+          value={formatM3(metrics.monthly)}
           color="green"
           delay={50}
         />
         <SummaryCard
           icon={TrendingUp}
-          label="YEARLY DEMAND"
-          value={`${formatNumber(metrics.yearly)} L`}
+          label="Yearly"
+          value={formatM3(metrics.yearly)}
           color="purple"
           delay={100}
         />
         <SummaryCard
           icon={Users}
-          label="EST. POPULATION"
+          label="Population"
           value={metrics.population.toLocaleString()}
           color="orange"
           delay={150}
@@ -97,12 +106,12 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
       
       {/* Land-Use Breakdown */}
       <div
-        className="card-gradient opacity-0 animate-fade-in-up"
+        className="card-gradient opacity-0 animate-fade-in-up min-w-0 overflow-visible"
         style={{ animationDelay: '200ms', animationFillMode: 'forwards' }}
       >
         <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Land-Use Breakdown</h3>
-        <div className="flex items-center gap-6">
-          <div className="flex-1">
+        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+          <div className="w-full sm:flex-1 min-w-[160px]" style={{ minHeight: 200 }}>
             <ResponsiveContainer width="100%" height={200}>
               <PieChart>
                 <Pie
@@ -122,11 +131,11 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
               </PieChart>
             </ResponsiveContainer>
           </div>
-          <div className="space-y-3">
-            {landUseBreakdown.map((item, index) => (
+          <div className="space-y-3 shrink-0">
+            {landUseList.map((item, index) => (
               <div key={item.type} className="flex items-center gap-2">
                 <div 
-                  className="w-3 h-3 rounded-full" 
+                  className="w-3 h-3 rounded-full shrink-0" 
                   style={{ backgroundColor: COLORS[index % COLORS.length] }}
                 />
                 <span className="text-sm text-gray-700">{item.type}</span>
@@ -146,13 +155,14 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">Demand Forecast</h3>
           <span className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded-md">{growthRate}% growth</span>
         </div>
+        {forecastData.length > 0 ? (
         <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">
-          <LineChart data={forecastData}>
+          <LineChart key={forecastKey} data={forecastData}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis dataKey="year" stroke="#6b7280" />
             <YAxis stroke="#6b7280" />
             <Tooltip 
-              formatter={(value) => `${formatNumber(value)} L`}
+              formatter={(value) => formatM3(value)}
               contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
             />
             <Legend />
@@ -172,6 +182,9 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
             />
           </LineChart>
         </ResponsiveContainer>
+        ) : (
+          <div className="h-[200px] flex items-center justify-center text-gray-500 text-sm">Forecast from API (Analytics page loads it)</div>
+        )}
       </div>
       
       {/* Scenario Comparison */}
@@ -186,7 +199,7 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
             <XAxis dataKey="name" stroke="#6b7280" />
             <YAxis stroke="#6b7280" />
             <Tooltip 
-              formatter={(value) => `${formatNumber(value)} L`}
+              formatter={(value) => formatM3(value)}
               contentStyle={{ backgroundColor: 'white', border: '1px solid #e5e7eb', borderRadius: '8px' }}
             />
             <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]}>
@@ -198,7 +211,7 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
         </ResponsiveContainer>
         <div className="mt-4 flex items-center gap-2 text-sm">
           <span className="text-gray-600">Difference:</span>
-          <span className="font-semibold text-gray-900">{formatNumber(difference)} L/year</span>
+          <span className="font-semibold text-gray-900">{formatM3(difference)}/year</span>
           <TrendingUp size={16} className="text-blue-600" />
         </div>
       </div>
