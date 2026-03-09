@@ -2,7 +2,7 @@
  * API client for Water Demand backend.
  * All consumption values from API are in liters; convert to m³ for display (÷ 1000).
  */
-const API_BASE = import.meta.env.VITE_API_URL || "https://webgis-ryxr.onrender.com";
+const API_BASE = (import.meta.env.VITE_API_URL || "https://webgis-ryxr.onrender.com").replace(/\/+$/, "");
 
 function getToken() {
   return localStorage.getItem("authToken");
@@ -17,7 +17,9 @@ function headers(includeAuth = true) {
 }
 
 export async function apiFetch(path, options = {}) {
-  const url = `${API_BASE}${path}`;
+  const base = API_BASE.replace(/\/+$/, "");
+  const pathNorm = path.startsWith("/") ? path : `/${path}`;
+  const url = `${base}${pathNorm}`;
   const useAuth = options.skipAuth !== true;
   const res = await fetch(url, {
     ...options,
@@ -93,7 +95,8 @@ export async function updateParcel(parcelId, body) {
  * replaceAll: if true, replace all existing parcels; else merge/upsert by parcel_id.
  */
 export async function uploadParcelDataset(file, replaceAll = false) {
-  const url = `${API_BASE}/parcels/upload?replace_all=${replaceAll}`;
+  const base = API_BASE.replace(/\/+$/, "");
+  const url = `${base}/parcels/upload?replace_all=${replaceAll}`;
   const form = new FormData();
   form.append("file", file);
   const token = getToken();
