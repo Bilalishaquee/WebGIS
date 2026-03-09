@@ -2,7 +2,7 @@
  * API client for Water Demand backend.
  * All consumption values from API are in liters; convert to m³ for display (÷ 1000).
  */
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_URL || "https://webgis-ryxr.onrender.com";
 
 function getToken() {
   return localStorage.getItem("authToken");
