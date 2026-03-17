@@ -85,8 +85,8 @@ async def get_forecast(
     db: AsyncSession = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    """5-year (or 1-5) demand projection. growth_rate in %, years 1-5. Optional land_use filter."""
-    years = max(1, min(5, years))
+    """Demand projection. growth_rate in %, years 1-20. Optional land_use filter."""
+    years = max(1, min(20, years))
     q = select(Parcel)
     if land_use and land_use in ("Residential", "Commercial", "Mixed-use"):
         q = q.where(Parcel.land_use == land_use)

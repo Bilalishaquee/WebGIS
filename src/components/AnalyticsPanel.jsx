@@ -153,7 +153,7 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900">Demand Forecast</h3>
-          <span className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded-md">{growthRate}% growth</span>
+          <span className="text-xs sm:text-sm text-gray-600 bg-blue-50 px-2 py-1 rounded-md">{growthRate}% growth · {projectionYears} year{projectionYears !== 1 ? 's' : ''}</span>
         </div>
         {forecastData.length > 0 ? (
         <ResponsiveContainer width="100%" height={200} className="sm:h-[250px]">

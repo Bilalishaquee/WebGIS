@@ -74,7 +74,7 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              90 L/c
+               0.09 m³/c
             </button>
             <button
               onClick={() => onScenarioChange(100)}
@@ -84,7 +84,7 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
                   : 'bg-white text-gray-700 hover:bg-gray-100'
               }`}
             >
-              100 L/c
+          0.1 m³/c
             </button>
           </div>
           
@@ -95,17 +95,16 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
               value={growthRate}
               onChange={(e) => {
                 const raw = e.target.value;
-                if (raw === '') return;
-                const val = Number(raw);
+                const val = raw === '' ? 0 : Number(raw);
                 if (!Number.isNaN(val)) {
-                  const clamped = Math.min(10, Math.max(0, val));
+                  const clamped = Math.min(20, Math.max(0, val));
                   onGrowthChange(clamped);
                 }
               }}
               className="w-12 sm:w-16 px-2 py-1 border border-gray-300 rounded-md text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white"
               min="0"
-              max="10"
-              step="0.1"
+              max="20"
+              step="0.5"
             />
             <span className="text-xs sm:text-sm text-gray-600">%</span>
           </div>
@@ -115,7 +114,7 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
             onChange={(e) => onProjectionChange(Number(e.target.value))}
             className="px-3 py-1.5 border border-gray-300 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white hover:bg-gray-50 transition-colors"
           >
-            {[1, 2, 3, 4, 5].map(years => (
+            {[1, 2, 3, 4, 5, 7, 10].map(years => (
               <option key={years} value={years}>{years} Year{years > 1 ? 's' : ''}</option>
             ))}
           </select>

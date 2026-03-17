@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { useParcels } from '../hooks/useApi';
 import { formatM3 } from '../api/client';
 import * as api from '../api/client';
-import { Pencil } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 
 const pid = (p) => p.parcel_id ?? p.id;
 const landUse = (p) => p.land_use ?? p.landUse;
@@ -14,8 +14,10 @@ const Parcels = () => {
   const [selectedType, setSelectedType] = useState('All');
   const [currentPage, setCurrentPage] = useState(1);
   const [editingParcel, setEditingParcel] = useState(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [addSuccess, setAddSuccess] = useState(false);
   const itemsPerPage = 25;
   const skip = (currentPage - 1) * itemsPerPage;
 
@@ -55,6 +57,22 @@ const Parcels = () => {
     }
   };
 
+  const handleAddParcel = async (body) => {
+    setSaveLoading(true);
+    setAddSuccess(false);
+    try {
+      await api.createParcel(body);
+      setAddModalOpen(false);
+      refetch();
+      setAddSuccess(true);
+      setTimeout(() => setAddSuccess(false), 3000);
+    } catch (err) {
+      alert(err.message || 'Failed to add parcel');
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="px-4 sm:px-6 pt-6 pb-4 bg-white/90 backdrop-blur-md border-b border-gray-200/60 lg:pl-6 pl-16 animate-fade-in">
@@ -64,10 +82,20 @@ const Parcels = () => {
         {error && (
           <p className="text-sm text-amber-700 mb-2">Could not load parcels. Is the backend running?</p>
         )}
-        {saveSuccess && (
-          <p className="text-sm text-green-700 mb-2 font-medium">Parcel saved. Map and analytics will update when you open the Dashboard.</p>
+        {(saveSuccess || addSuccess) && (
+          <p className="text-sm text-green-700 mb-2 font-medium">
+            {addSuccess ? 'Parcel added.' : 'Parcel saved.'} Map and analytics will update when you open the Dashboard.
+          </p>
         )}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+          <button
+            type="button"
+            onClick={() => setAddModalOpen(true)}
+            className="btn-primary flex items-center justify-center gap-2 shrink-0"
+          >
+            <Plus size={18} />
+            Add parcel
+          </button>
           <input
             type="text"
             value={searchTerm}
@@ -155,6 +183,13 @@ const Parcels = () => {
           loading={saveLoading}
         />
       )}
+      {addModalOpen && (
+        <AddParcelModal
+          onClose={() => setAddModalOpen(false)}
+          onSave={handleAddParcel}
+          loading={saveLoading}
+        />
+      )}
     </div>
   );
 };
@@ -205,6 +240,87 @@ function EditParcelModal({ parcel, onClose, onSave, loading }) {
           <div className="flex gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
             <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Saving…' : 'Save'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AddParcelModal({ onClose, onSave, loading }) {
+  const [parcel_id, setParcelId] = useState('');
+  const [land_use, setLandUse] = useState('Residential');
+  const [population, setPopulation] = useState(0);
+  const [lat, setLat] = useState('');
+  const [lng, setLng] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const parcelIdTrimmed = parcel_id.trim();
+    if (!parcelIdTrimmed) {
+      alert('Parcel ID is required');
+      return;
+    }
+    const latNum = parseFloat(lat);
+    const lngNum = parseFloat(lng);
+    if (Number.isNaN(latNum) || Number.isNaN(lngNum)) {
+      alert('Valid latitude and longitude are required');
+      return;
+    }
+    if (latNum < -90 || latNum > 90 || lngNum < -180 || lngNum > 180) {
+      alert('Latitude must be -90 to 90, longitude -180 to 180');
+      return;
+    }
+    onSave({
+      parcel_id: parcelIdTrimmed,
+      land_use,
+      population: Math.max(0, Math.min(1000, population)),
+      lat: latNum,
+      lng: lngNum,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1100] flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
+      <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Add parcel</h3>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Parcel ID</label>
+            <input
+              type="text"
+              value={parcel_id}
+              onChange={(e) => setParcelId(e.target.value)}
+              placeholder="e.g. P-0400"
+              className="input-field w-full"
+              maxLength={32}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Land use</label>
+            <select value={land_use} onChange={(e) => setLandUse(e.target.value)} className="input-field w-full">
+              <option value="Residential">Residential</option>
+              <option value="Commercial">Commercial</option>
+              <option value="Mixed-use">Mixed-use</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Population</label>
+            <input type="number" min={0} max={1000} value={population} onChange={(e) => setPopulation(Number(e.target.value) || 0)} className="input-field w-full" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Latitude</label>
+              <input type="number" step="any" min={-90} max={90} value={lat} onChange={(e) => setLat(e.target.value)} placeholder="4.59" className="input-field w-full" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Longitude</label>
+              <input type="number" step="any" min={-180} max={180} value={lng} onChange={(e) => setLng(e.target.value)} placeholder="-74.21" className="input-field w-full" />
+            </div>
+          </div>
+          <div className="flex gap-2 pt-2">
+            <button type="button" onClick={onClose} className="btn-secondary flex-1">Cancel</button>
+            <button type="submit" disabled={loading} className="btn-primary flex-1">{loading ? 'Adding…' : 'Add parcel'}</button>
           </div>
         </form>
       </div>

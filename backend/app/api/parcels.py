@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from app.database import get_db
 from app.models.parcel import Parcel
-from app.schemas.parcel import ParcelResponse, ParcelUpdate, ParcelListResponse
+from app.schemas.parcel import ParcelResponse, ParcelUpdate, ParcelCreate, ParcelListResponse
 from app.services.consumption import compute_parcel_consumption
 from app.services.import_parcels import parse_csv, parse_json
 from app.api.deps import get_current_user_id
@@ -50,6 +50,29 @@ async def list_parcels(
         parcels=[_parcel_to_response(p) for p in parcels],
         total=total,
     )
+
+
+@router.post("", response_model=ParcelResponse, status_code=201)
+async def create_parcel(
+    data: ParcelCreate,
+    db: AsyncSession = Depends(get_db),
+    _user_id: int = Depends(get_current_user_id),
+):
+    """Create a single parcel manually. parcel_id must be unique."""
+    r = await db.execute(select(Parcel).where(Parcel.parcel_id == data.parcel_id))
+    if r.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="Parcel ID already exists")
+    p = Parcel(
+        parcel_id=data.parcel_id.strip(),
+        land_use=data.land_use,
+        population=data.population,
+        lat=data.lat,
+        lng=data.lng,
+    )
+    db.add(p)
+    await db.commit()
+    await db.refresh(p)
+    return _parcel_to_response(p)
 
 
 @router.get("/{parcel_id}", response_model=ParcelResponse)

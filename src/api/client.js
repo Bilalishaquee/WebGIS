@@ -83,6 +83,14 @@ export async function getParcel(parcelId) {
   return apiFetch(`/parcels/${encodeURIComponent(parcelId)}`);
 }
 
+/** Create a single parcel. Body: { parcel_id, land_use, population, lat, lng }. */
+export async function createParcel(body) {
+  return apiFetch("/parcels", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function updateParcel(parcelId, body) {
   return apiFetch(`/parcels/${encodeURIComponent(parcelId)}`, {
     method: "PATCH",
@@ -152,9 +160,10 @@ export function litersToM3(liters) {
   return liters / 1000;
 }
 
-/** Format volume for display (m³) */
+/** Format volume for display (m³). Input is always in liters; we convert to m³ (1 m³ = 1000 L). */
 export function formatM3(value, decimals = 2) {
-  const m3 = typeof value === "number" ? value : litersToM3(value);
+  const liters = typeof value === "number" ? value : Number(value) || 0;
+  const m3 = liters / 1000;
   if (m3 >= 1e6) return `${(m3 / 1e6).toFixed(decimals)}M m³`;
   if (m3 >= 1e3) return `${(m3 / 1e3).toFixed(decimals)}K m³`;
   return `${m3.toFixed(decimals)} m³`;

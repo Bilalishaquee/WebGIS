@@ -55,13 +55,24 @@
   .stagger-8 { animation-delay: 0.4s; }
 }
 
-/* Leaflet map container styles */
+/* Leaflet map — keep smooth zoom; prevent white box by making all panes transparent */
 .leaflet-container {
   height: 100%;
   width: 100%;
   z-index: 1;
   border-radius: 0.75rem;
+  background: transparent !important;
 }
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-zoom-animated {
+  background: transparent !important;
+}
+.leaflet-tile-pane { z-index: 0; }
+.leaflet-overlay-pane { z-index: 1; }
 
 .leaflet-popup-content-wrapper {
   border-radius: 0.75rem !important;

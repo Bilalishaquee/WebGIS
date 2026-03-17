@@ -28,6 +28,11 @@ const Dashboard = () => {
   const { landUseBreakdown, loading: breakdownLoading, refetch: refetchLandUse } = useLandUseBreakdown(selectedLandUse);
   const { forecastData, loading: forecastLoading, refetch: refetchForecast } = useForecast(growthRate ?? 2, projectionYears ?? 5, selectedLandUse);
 
+  // Refetch forecast whenever growth rate or projection years change so the chart updates
+  useEffect(() => {
+    refetchForecast();
+  }, [growthRate, projectionYears, refetchForecast]);
+
   const handleParcelUpdated = () => {
     refetchParcels();
     refetchSummary();
@@ -110,8 +115,8 @@ const Dashboard = () => {
               onChange={(e) => setScenario(Number(e.target.value))}
               className="input-field text-xs sm:text-sm flex-1 lg:flex-initial"
             >
-              <option value={90}>Baseline (90 L/c)</option>
-              <option value={100}>High estimate (100 L/c)</option>
+              <option value={90}>Baseline ( 0.09 m³/c)</option>
+              <option value={100}>High estimate ( 0.1 m³/c)</option>
             </select>
             
             <button
@@ -123,13 +128,14 @@ const Dashboard = () => {
           </div>
         </div>
         
-        {/* Map Container */}
-        <div className="flex-1 relative min-h-[280px] sm:min-h-[300px] min-w-0 overflow-hidden">
-          {(parcelsLoading && parcels.length === 0) ? (
-            <div className="absolute inset-0 flex items-center justify-center bg-gray-100/50 rounded-xl">
+        {/* Map Container — only show loading when we have no parcels yet; never overlay grey on top of map */}
+        <div className="flex-1 relative min-h-[280px] sm:min-h-[300px] min-w-0 overflow-hidden bg-transparent">
+          {parcelsLoading && parcels.length === 0 ? (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-100/80 rounded-xl">
               <span className="text-gray-600">Loading map…</span>
             </div>
-          ) : (
+          ) : null}
+          {!(parcelsLoading && parcels.length === 0) ? (
             <MapPanel
               parcels={parcels}
               scenario={scenario}
@@ -139,7 +145,7 @@ const Dashboard = () => {
               projectionYears={projectionYears}
               onParcelUpdated={handleParcelUpdated}
             />
-          )}
+          ) : null}
         </div>
       </div>
 

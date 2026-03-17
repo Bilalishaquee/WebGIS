@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { MapContainer, TileLayer, CircleMarker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Popup, Tooltip, useMapEvents, useMap } from 'react-leaflet';
 import { getConsumptionLevel } from '../utils/consumption';
 import { TrendingUp, Pencil, CheckCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatM3 } from '../api/client';
@@ -19,8 +19,10 @@ function getMapView(parcels) {
   const minLng = Math.min(...lngs);
   const maxLng = Math.max(...lngs);
   const center = [(minLat + maxLat) / 2, (minLng + maxLng) / 2];
+  // Add padding so markers aren’t at the edge; slightly zoom out for breathing room
   const span = Math.max(maxLat - minLat, maxLng - minLng) || 0.02;
-  const zoom = span > 0.2 ? 11 : span > 0.05 ? 13 : 15;
+  const paddedSpan = Math.max(span * 1.35, 0.025);
+  const zoom = paddedSpan > 0.2 ? 11 : paddedSpan > 0.05 ? 13 : 15;
   return { center, zoom };
 }
 
@@ -34,26 +36,53 @@ const MapEvents = ({ onMapClick }) => {
   return null;
 };
 
-// When the panel or window resizes, tell Leaflet to recalculate the map size so it fills the container (no gray gap).
-function MapResizeHandler() {
+// Observe both the map container AND its parent (flex can resize parent without container resizing).
+function MapResizeHandler({ parentRef }) {
   const map = useMap();
   useEffect(() => {
     const container = map.getContainer();
-    const ro = new ResizeObserver(() => {
-      map.invalidateSize();
-    });
+    const scheduleInvalidate = () => {
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+      });
+    };
+    const ro = new ResizeObserver(scheduleInvalidate);
     ro.observe(container);
-    const onResize = () => map.invalidateSize();
-    window.addEventListener('resize', onResize);
+    const parent = parentRef?.current?.parentElement ?? container.parentElement;
+    if (parent && parent !== document.body) ro.observe(parent);
+    window.addEventListener('resize', scheduleInvalidate);
     return () => {
       ro.disconnect();
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('resize', scheduleInvalidate);
     };
-  }, [map]);
+  }, [map, parentRef]);
+  return null;
+}
+
+// After zoom/move, invalidate so tiles repaint (avoids white box).
+function MapZoomHandler({ parentRef }) {
+  const map = useMap();
+  useEffect(() => {
+    const onEnd = () => {
+      requestAnimationFrame(() => {
+        map.invalidateSize();
+        const el = parentRef?.current ?? map.getContainer().parentElement;
+        if (el) void el.offsetHeight; // force reflow
+      });
+      setTimeout(() => map.invalidateSize(), 150);
+    };
+    map.on('zoomend', onEnd);
+    map.on('moveend', onEnd);
+    return () => {
+      map.off('zoomend', onEnd);
+      map.off('moveend', onEnd);
+    };
+  }, [map, parentRef]);
   return null;
 }
 
 const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRate, projectionYears, onParcelUpdated }) => {
+  const mapWrapperRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [selectedParcel, setSelectedParcel] = useState(null);
   const [editingParcel, setEditingParcel] = useState(null);
@@ -108,7 +137,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
   };
   
   return (
-    <div className="relative h-full w-full min-w-0 min-h-0">
+    <div ref={mapWrapperRef} className="relative h-full w-full min-w-0 min-h-0">
       {/* Success toast after parcel save */}
       {saveSuccess && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white text-sm font-medium rounded-lg shadow-lg animate-fade-in-up">
@@ -120,30 +149,39 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         key={`map-${center[0].toFixed(4)}-${center[1].toFixed(4)}-${zoom}`}
         center={center}
         zoom={zoom}
+        minZoom={2}
+        maxZoom={19}
         style={{ height: '100%', width: '100%', minHeight: 0 }}
         scrollWheelZoom={true}
         closePopupOnClick={!isMobile}
       >
-        <MapResizeHandler />
+        <MapResizeHandler parentRef={mapWrapperRef} />
+        <MapZoomHandler parentRef={mapWrapperRef} />
         <MapEvents onMapClick={() => isMobile && setSelectedParcel(null)} />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
+          maxNativeZoom={19}
         />
         {filteredParcels.map((parcel) => {
           const daily = scenario === 90 ? parcel.daily90 : parcel.daily100;
-          const level = getConsumptionLevel(daily);
+          const yearly = scenario === 90 ? parcel.yearly90 : parcel.yearly100;
+          const level = getConsumptionLevel(daily ?? 0);
           const isSelected = selectedParcel?.id === parcel.id;
-          
+          const popPopulation = parcel.population ?? 0;
+          const popDaily = typeof daily === 'number' ? daily : 0;
+          const popYearly = typeof yearly === 'number' ? yearly : 0;
+
           return (
             <CircleMarker
-              key={`${parcel.id}-${scenario}`}
+              key={parcel.id ?? parcel.parcel_id}
               center={[parcel.lat, parcel.lng]}
-              radius={6}
+              radius={isSelected ? 10 : 8}
               fillColor={level.color}
-              color={level.color}
-              fillOpacity={0.7}
-              weight={2}
+              color="#ffffff"
+              fillOpacity={0.88}
+              weight={isSelected ? 3 : 2}
               eventHandlers={{
                 click: (e) => handleMarkerClick(parcel, e),
                 mouseover: () => {
@@ -158,6 +196,13 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
                 },
               }}
             >
+              <Tooltip direction="top" offset={[0, -8]} opacity={0.95} permanent={false}>
+                <span className="font-semibold">{pid(parcel)}</span>
+                <br />
+                {landUse(parcel)} · Pop. {popPopulation}
+                <br />
+                Daily {formatM3(popDaily)} · Yearly {formatM3(popYearly)}
+              </Tooltip>
               {!isMobile && (
                 <Popup className="custom-popup" autoClose={true} closeOnClick={true}>
                   <div className="p-3 min-w-[180px]">
@@ -169,9 +214,9 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
                           {landUse(parcel)}
                         </span>
                       </div>
-                      <div><span className="font-medium">Population:</span> {parcel.population}</div>
-                      <div><span className="font-medium">Daily:</span> {formatM3(daily)}</div>
-                      <div><span className="font-medium">Yearly:</span> {formatM3(scenario === 90 ? parcel.yearly90 : parcel.yearly100)}</div>
+                      <div><span className="font-medium">Population:</span> {popPopulation}</div>
+                      <div><span className="font-medium">Daily:</span> {formatM3(popDaily)}</div>
+                      <div><span className="font-medium">Yearly:</span> {formatM3(popYearly)}</div>
                     </div>
                     <button
                       type="button"
@@ -188,9 +233,9 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         })}
       </MapContainer>
       
-      {/* Growth projection overlay — affects forecast chart only, not map colors */}
+      {/* Growth projection overlay — always show key info on the map */}
       {(growthRate != null || projectionYears != null) && (
-        <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/60 animate-fade-in-up max-w-[180px]">
+        <div className="absolute top-4 right-4 z-10 bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/60 animate-fade-in-up min-w-[160px] max-w-[200px]">
           <button
             type="button"
             onClick={() => setGrowthPanelCollapsed((c) => !c)}
@@ -198,9 +243,13 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
             aria-expanded={!growthPanelCollapsed}
             aria-label={growthPanelCollapsed ? 'Show growth projection' : 'Hide growth projection'}
           >
-            <div className="flex items-center gap-2 min-w-0">
-              <TrendingUp size={16} className="text-blue-600 shrink-0" />
-              <span className="text-xs font-semibold text-gray-900 truncate">Growth projection</span>
+            <div className="flex flex-col gap-0.5 min-w-0">
+              <span className="text-xs font-semibold text-gray-900">Growth projection</span>
+              <span className="text-[11px] text-gray-600">
+                {growthRate != null && <span>{growthRate}%/year</span>}
+                {growthRate != null && projectionYears != null && ' · '}
+                {projectionYears != null && <span>{projectionYears} year{projectionYears !== 1 ? 's' : ''}</span>}
+              </span>
             </div>
             <span className="shrink-0 p-1 rounded text-gray-500 hover:bg-gray-200/60">
               {growthPanelCollapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
@@ -258,7 +307,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
       )}
       
       {/* Consumption Level Legend — daily consumption per parcel (colors respond to scenario 90 vs 100 L/c) */}
-      <div className={`absolute bg-white/95 backdrop-blur-md rounded-xl shadow-xl border border-gray-200/60 z-10 animate-fade-in-up ${
+      <div className={`absolute bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/60 z-10 animate-fade-in-up max-w-[220px] ${
         isMobile && selectedParcel 
           ? 'bottom-20 left-4 right-4' 
           : 'bottom-4 right-4'
@@ -266,15 +315,13 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         <button
           type="button"
           onClick={() => setLegendCollapsed((c) => !c)}
-          className="w-full flex items-center justify-between gap-2 p-3 sm:p-4 text-left hover:bg-gray-50/80 rounded-xl transition-colors"
+          className="w-full flex items-center justify-between gap-2 p-2.5 sm:p-3 text-left hover:bg-gray-50/80 rounded-xl transition-colors"
           aria-expanded={!legendCollapsed}
           aria-label={legendCollapsed ? 'Show consumption legend' : 'Hide consumption legend'}
         >
-          <div>
+          <div className="min-w-0">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-900">Consumption Level</h3>
-            {legendCollapsed && (
-              <p className="text-xs text-gray-500 mt-0.5">Daily per parcel ({scenario} L/c)</p>
-            )}
+            <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">Daily per parcel ({scenario} L/c = {scenario === 90 ? '0.09' : '0.1'} m³/c)</p>
           </div>
           <span className="shrink-0 p-1 rounded text-gray-500 hover:bg-gray-200/60">
             {legendCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -282,9 +329,9 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         </button>
         {!legendCollapsed && (
           <>
-            <div className="px-3 sm:px-4 pb-2">
-              <p className="text-xs text-gray-500 mb-2">Daily consumption per parcel (current scenario: {scenario} L/c)</p>
-              <div className="space-y-1.5 sm:space-y-2">
+            <div className="px-2.5 sm:px-3 pb-2">
+              <p className="text-[11px] sm:text-xs text-gray-500 mb-1.5">Daily per parcel ({scenario} L/c)</p>
+              <div className="space-y-1">
                 {[
                   { level: 'Low', threshold: '< 0.5 m³', color: '#93c5fd' },
                   { level: 'Medium', threshold: '0.5–0.8 m³', color: '#60a5fa' },
@@ -293,7 +340,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
                 ].map((item) => (
                   <div key={item.level} className="flex items-center gap-2">
                     <div 
-                      className="w-3 h-3 sm:w-4 sm:h-4 rounded-full shadow-sm" 
+                      className="w-3 h-3 rounded-full border border-white/80 shadow-sm shrink-0" 
                       style={{ backgroundColor: item.color }}
                     />
                     <span className="text-xs text-gray-700 font-medium">
@@ -303,7 +350,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
                 ))}
               </div>
             </div>
-            <div className="px-3 sm:px-4 py-2 pt-2 border-t border-gray-200 text-xs text-gray-500">
+            <div className="px-2.5 sm:px-3 py-1.5 border-t border-gray-200/80 text-[10px] text-gray-400">
               Leaflet | © OSM
             </div>
           </>
