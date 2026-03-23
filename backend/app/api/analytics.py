@@ -103,15 +103,15 @@ async def get_scenario_comparison(
     db: AsyncSession = Depends(get_db),
     _user_id: int = Depends(get_current_user_id),
 ):
-    """Scenario comparison: 90 L/c vs 100 L/c yearly demand (liters)."""
+    """Scenario comparison: 0.09 m³/c vs 0.1 m³/c yearly demand (liters)."""
     r = await db.execute(select(Parcel))
     parcels = list(r.scalars().all())
     y90 = sum(parcel_yearly_consumption(p.population, L_PER_CAPITA_90, p.land_use) for p in parcels)
     y100 = sum(parcel_yearly_consumption(p.population, L_PER_CAPITA_100, p.land_use) for p in parcels)
     return ScenarioComparison(
         comparison=[
-            ScenarioComparisonItem(name="90 L/c", value=y90),
-            ScenarioComparisonItem(name="100 L/c", value=y100),
+            ScenarioComparisonItem(name="0.09 m³/c", value=y90),
+            ScenarioComparisonItem(name="0.1 m³/c", value=y100),
         ],
         difference=y100 - y90,
     )

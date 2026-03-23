@@ -52,7 +52,7 @@ const Settings = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Default Scenario (L per capita)
+                Default Scenario (0.09 m³/c baseline vs 0.1 m³/c high estimate)
               </label>
               <input
                 type="number"

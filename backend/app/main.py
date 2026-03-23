@@ -3,7 +3,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.database import init_db
-from app.api import auth, parcels, analytics
+from app.api import auth, parcels, analytics, chat
 # Ensure all models are registered with Base before init_db()
 from app.models import user as _user, parcel as _parcel  # noqa: F401
 
@@ -34,6 +34,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(parcels.router)
 app.include_router(analytics.router)
+app.include_router(chat.router)
 
 
 @app.get("/health")

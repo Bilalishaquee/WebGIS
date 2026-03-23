@@ -21,3 +21,6 @@ email-validator>=2.0
 
 # Optional: read shapefile from San Miguel .aprx data (Building.shp)
 pyshp>=2.3
+
+# Chatbot (OpenAI)
+openai>=1.0.0

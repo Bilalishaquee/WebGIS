@@ -115,8 +115,8 @@ const Dashboard = () => {
               onChange={(e) => setScenario(Number(e.target.value))}
               className="input-field text-xs sm:text-sm flex-1 lg:flex-initial"
             >
-              <option value={90}>Baseline ( 0.09 m³/c)</option>
-              <option value={100}>High estimate ( 0.1 m³/c)</option>
+              <option value={90}>Baseline (0.09 m³/c)</option>
+              <option value={100}>High estimate (0.1 m³/c)</option>
             </select>
             
             <button

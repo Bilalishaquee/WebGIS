@@ -155,6 +155,18 @@ export async function getScenarioComparison() {
   return apiFetch("/analytics/scenario-comparison");
 }
 
+/**
+ * Chat with the water-demand assistant (OpenAI, domain-bound).
+ * Returns { reply }. On 503/502 (not configured or OpenAI error), throws so caller can fall back.
+ */
+export async function chat(message) {
+  const data = await apiFetch("/chat", {
+    method: "POST",
+    body: JSON.stringify({ message: String(message).trim() }),
+  });
+  return data;
+}
+
 /** Convert liters to cubic meters for display */
 export function litersToM3(liters) {
   return liters / 1000;

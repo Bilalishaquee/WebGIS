@@ -306,7 +306,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         </div>
       )}
       
-      {/* Consumption Level Legend — daily consumption per parcel (colors respond to scenario 90 vs 100 L/c) */}
+      {/* Consumption Level Legend — daily consumption per parcel (colors respond to scenario 0.09 vs 0.1 m³/c) */}
       <div className={`absolute bg-white/95 backdrop-blur-md rounded-xl shadow-lg border border-gray-200/60 z-10 animate-fade-in-up max-w-[220px] ${
         isMobile && selectedParcel 
           ? 'bottom-20 left-4 right-4' 
@@ -321,7 +321,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         >
           <div className="min-w-0">
             <h3 className="text-xs sm:text-sm font-semibold text-gray-900">Consumption Level</h3>
-            <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">Daily per parcel ({scenario} L/c = {scenario === 90 ? '0.09' : '0.1'} m³/c)</p>
+            <p className="text-[11px] sm:text-xs text-gray-600 mt-0.5">Daily per parcel ({scenario === 90 ? '0.09' : '0.1'} m³/c)</p>
           </div>
           <span className="shrink-0 p-1 rounded text-gray-500 hover:bg-gray-200/60">
             {legendCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
@@ -330,7 +330,7 @@ const MapPanel = ({ parcels, scenario, selectedLandUse, onParcelHover, growthRat
         {!legendCollapsed && (
           <>
             <div className="px-2.5 sm:px-3 pb-2">
-              <p className="text-[11px] sm:text-xs text-gray-500 mb-1.5">Daily per parcel ({scenario} L/c)</p>
+              <p className="text-[11px] sm:text-xs text-gray-500 mb-1.5">Daily per parcel ({scenario === 90 ? '0.09' : '0.1'} m³/c)</p>
               <div className="space-y-1">
                 {[
                   { level: 'Low', threshold: '< 0.5 m³', color: '#93c5fd' },

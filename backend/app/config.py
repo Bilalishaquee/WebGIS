@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     DEFAULT_L_PER_CAPITA_LOW: int = 90
     DEFAULT_L_PER_CAPITA_HIGH: int = 100
 
+    # Chatbot (OpenAI). Leave empty to disable chat API; frontend will use keyword fallback.
+    OPENAI_API_KEY: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"

@@ -119,7 +119,7 @@ export function useForecast(growthRate = 2, years = 5, landUse = 'All') {
 }
 
 /**
- * Scenario comparison (90 L/c vs 100 L/c). Values in liters.
+ * Scenario comparison (0.09 m³/c vs 0.1 m³/c). Values in liters from API.
  */
 export function useScenarioComparison() {
   const [data, setData] = useState(null);

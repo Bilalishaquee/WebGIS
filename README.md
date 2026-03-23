@@ -1,6 +1,6 @@
 # Neighborhood Water Demand Dashboard
 
-A map-based WebGIS dashboard for **consumption analysis**, **predictions**, and **visualization** of water demand across ~360–400 parcels. It uses **estimated average daily consumption per person** (90–100 L/person/day, standard values for informal urban areas), with no real monthly meter data.
+A map-based WebGIS dashboard for **consumption analysis**, **predictions**, and **visualization** of water demand across ~360–400 parcels. It uses **estimated average daily consumption per person** (0.09–0.1 m³/c per day, standard values for informal urban areas), with no real monthly meter data.
 
 See **[PROJECT_SPEC.md](./PROJECT_SPEC.md)** for the client brief and **[PROJECT_BRIEF_CHECKLIST.md](./PROJECT_BRIEF_CHECKLIST.md)** for how each requirement is implemented.
 
@@ -11,7 +11,7 @@ See **[PROJECT_SPEC.md](./PROJECT_SPEC.md)** for the client brief and **[PROJECT
 - **Map-based dashboard**: Interactive map with parcel attributes and consumption distribution; forecast charts
 - **AI Chat Assistant**: Q&A about total consumption, consumption by parcel type, growth projections, scenario comparisons
 - **Data management**: Parcel table, filters, upload (Data Sources)
-- **Settings**: Scenario (90 vs 100 L/c), growth rate, projection years
+- **Settings**: Scenario (0.09 vs 0.1 m³/c), growth rate, projection years
 
 ## Tech Stack
 
@@ -61,7 +61,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 2. Open API docs: http://localhost:8000/docs
 
 - **Authentication**: Register and log in via the dashboard; the frontend stores the JWT and sends it on API requests.
-- **Units**: All consumption values from the API are in liters; the UI displays **cubic meters (m³)**. Consumption is estimated from **population and land-use** using **90 and 100 L/person/day** (informal urban standard).
+- **Units**: All consumption values from the API are in liters; the UI displays **cubic meters (m³)**. Consumption is estimated from **population and land-use** using **0.09 and 0.1 m³/c per person per day** (informal urban standard).
 - **Parcel editing**: Select a parcel on the map or in the Parcels table, click Edit, change attributes, and Save; the map and analytics update automatically.
 
 ## Project Structure
@@ -102,7 +102,7 @@ src/
 ## Data and consumption model
 
 - **Parcels**: Loaded from the API (database seeded from **WebGIS/San Miguel 2/** — see `data/README.md` — or from Data Sources → Upload). Attributes: parcel ID, land-use type, population, coordinates.
-- **Consumption**: Estimated at parcel level as **population × L/person/day × land-use coefficient** (90 or 100 L/c; Residential 1.0, Commercial 1.2, Mixed-use 1.1). No real meter data.
+- **Consumption**: Estimated at parcel level as **population × m³/c per day × land-use coefficient** (0.09 or 0.1 m³/c; Residential 1.0, Commercial 1.2, Mixed-use 1.1). No real meter data.
 - **Predictions**: Simple growth model (compound growth on total demand) and forecast chart; map overlay for growth scenario.
 
 ## Features in Detail
@@ -130,7 +130,7 @@ src/
 ## Customization
 
 ### Scenario Settings
-- Toggle between 90L/c and 100L/c scenarios
+- Toggle between 0.09 m³/c and 0.1 m³/c scenarios
 - Adjust growth rate (0-10%)
 - Set projection years (1-5 years)
 

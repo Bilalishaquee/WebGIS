@@ -28,7 +28,7 @@ const DataSources = () => {
     {
       name: 'Estimated consumption',
       status: 'Active',
-      type: 'Model (90 / 100 L/person/day)',
+      type: 'Model (0.09 / 0.1 m³/c per person per day)',
       records: 'From parcel data',
       updated: 'On demand',
       icon: Database,

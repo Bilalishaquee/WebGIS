@@ -53,14 +53,8 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
   const forecastData = Array.isArray(apiForecast) && apiForecast.length > 0 ? apiForecast : [];
   
   const scenarioComparison = [
-    {
-      name: '90 L/c',
-      value: baseYearly90,
-    },
-    {
-      name: '100 L/c',
-      value: baseYearly100,
-    },
+    { name: '0.09 m³/c', value: baseYearly90 },
+    { name: '0.1 m³/c', value: baseYearly100 },
   ];
   
   const difference = baseYearly100 - baseYearly90;
@@ -171,14 +165,14 @@ const AnalyticsPanel = ({ metrics, landUseBreakdown, scenario, growthRate, proje
               dataKey="year90" 
               stroke="#3b82f6" 
               strokeWidth={2}
-              name="90 L/c"
+              name="0.09 m³/c"
             />
             <Line 
               type="monotone" 
               dataKey="year100" 
               stroke="#14b8a6" 
               strokeWidth={2}
-              name="100 L/c"
+              name="0.1 m³/c"
             />
           </LineChart>
         </ResponsiveContainer>

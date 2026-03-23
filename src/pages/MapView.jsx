@@ -28,8 +28,8 @@ const MapView = () => {
           onChange={(e) => setScenario(Number(e.target.value))}
           className="input-field text-xs sm:text-sm"
         >
-          <option value={90}>Baseline (90 L/c = 0.09 m³/c)</option>
-          <option value={100}>High estimate (100 L/c = 0.1 m³/c)</option>
+          <option value={90}>Baseline (0.09 m³/c)</option>
+          <option value={100}>High estimate (0.1 m³/c)</option>
         </select>
       </div>
       

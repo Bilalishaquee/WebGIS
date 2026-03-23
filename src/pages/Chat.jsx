@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Send, MessageSquare } from 'lucide-react';
 import * as api from '../api/client';
 
@@ -6,7 +7,7 @@ const suggestedQuestions = [
   'What is the total estimated consumption for the neighborhood?',
   'Consumption by parcel type (residential, commercial, mixed-use)',
   'Growth projections: what will demand be in 5 years with 3% growth?',
-  'Compare scenarios: 90 L vs 100 L per person per day.',
+  'Compare scenarios: 0.09 m³/c vs 0.1 m³/c per person per day.',
 ];
 
 /**
@@ -19,7 +20,7 @@ async function getAnswerForQuestion(question, growthRate = 2, years = 5) {
     // Total estimated consumption
     if (/\b(total|yearly|year|daily|monthly|demand|consumption|neighborhood|aggregate)\b/.test(q) && !/\b(by|per|type|parcel|residential|commercial|mixed)\b/.test(q)) {
       const [s90, s100] = await Promise.all([api.getSummary(90), api.getSummary(100)]);
-      return `**Total estimated consumption (neighborhood):**\n• **90 L/c scenario:** ${api.formatM3(s90.yearly)} yearly, ${api.formatM3(s90.daily)} daily. Population: ${s90.population.toLocaleString()}.\n• **100 L/c scenario:** ${api.formatM3(s100.yearly)} yearly, ${api.formatM3(s100.daily)} daily.\n\nThese are aggregated from all parcels using the current parcel attributes and land-use coefficients.`;
+      return `**Total estimated consumption (neighborhood):**\n• **0.09 m³/c scenario:** ${api.formatM3(s90.yearly)} yearly, ${api.formatM3(s90.daily)} daily. Population: ${s90.population.toLocaleString()}.\n• **0.1 m³/c scenario:** ${api.formatM3(s100.yearly)} yearly, ${api.formatM3(s100.daily)} daily.\n\nThese are aggregated from all parcels using the current parcel attributes and land-use coefficients.`;
     }
 
     // Consumption by parcel type / land use
@@ -36,23 +37,26 @@ async function getAnswerForQuestion(question, growthRate = 2, years = 5) {
       const { data } = await api.getForecast(rate, years);
       const last = data[data.length - 1];
       const first = data[0];
-      return `**Demand forecast** (${rate}% annual growth, ${years}-year horizon):\n• **Year 0 (current):** 90 L/c → ${api.formatM3(first?.year90)}, 100 L/c → ${api.formatM3(first?.year100)}.\n• **Year ${years}:** 90 L/c → ${api.formatM3(last?.year90)}, 100 L/c → ${api.formatM3(last?.year100)}.\n\nThis assumes compound growth applied to current neighborhood consumption; it can reflect population growth and urban demand trends.`;
+      return `**Demand forecast** (${rate}% annual growth, ${years}-year horizon):\n• **Year 0 (current):** 0.09 m³/c → ${api.formatM3(first?.year90)}, 0.1 m³/c → ${api.formatM3(first?.year100)}.\n• **Year ${years}:** 0.09 m³/c → ${api.formatM3(last?.year90)}, 0.1 m³/c → ${api.formatM3(last?.year100)}.\n\nThis assumes compound growth applied to current neighborhood consumption; it can reflect population growth and urban demand trends.`;
     }
 
-    // Scenario comparison (90 vs 100 L/c)
-    if (/\b(scenario|90\s*L|100\s*L|90\s*vs|100\s*vs|compare.*scenario|difference)\b/.test(q)) {
+    // Scenario comparison (0.09 vs 0.1 m³/c)
+    if (/\b(scenario|90\s*L|100\s*L|0\.09|0\.1|m³|90\s*vs|100\s*vs|compare.*scenario|difference)\b/.test(q)) {
       const res = await api.getScenarioComparison();
       const [a, b] = res.comparison;
-      return `**Scenario comparison (yearly demand):**\n• **${a.name}:** ${api.formatM3(a.value)}\n• **${b.name}:** ${api.formatM3(b.value)}\n• **Difference:** ${api.formatM3(res.difference)} more per year under 100 L/c.\n\nThis compares the two standard assumptions (90 vs 100 L per person per day) for the current parcel data.`;
+      return `**Scenario comparison (yearly demand):**\n• **${a.name}:** ${api.formatM3(a.value)}\n• **${b.name}:** ${api.formatM3(b.value)}\n• **Difference:** ${api.formatM3(res.difference)} more per year under 0.1 m³/c.\n\nThis compares the two standard assumptions (0.09 m³/c vs 0.1 m³/c per person per day) for the current parcel data.`;
     }
 
-    return `I can answer questions about:\n• **Total estimated consumption** (daily, monthly, yearly)\n• **Consumption by parcel type** (residential, commercial, mixed-use)\n• **Growth projections** (future demand with a given % growth)\n• **Scenario comparison** (90 L/c vs 100 L/c)\n\nTry one of the suggested questions or rephrase yours.`;
+    return `I can answer questions about:\n• **Total estimated consumption** (daily, monthly, yearly)\n• **Consumption by parcel type** (residential, commercial, mixed-use)\n• **Growth projections** (future demand with a given % growth)\n• **Scenario comparison** (0.09 m³/c vs 0.1 m³/c)\n\nTry one of the suggested questions or rephrase yours.`;
   } catch (err) {
     return `I couldn't load the latest data (${err.message}). Make sure you're logged in and the backend is running, then try again.`;
   }
 }
 
 const Chat = () => {
+  const outletContext = useOutletContext() || {};
+  const growthRate = outletContext.growthRate ?? 2;
+  const projectionYears = outletContext.projectionYears ?? 5;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,10 +70,22 @@ const Chat = () => {
     setInput('');
     setLoading(true);
 
-    const answer = await getAnswerForQuestion(text);
-    setMessages((prev) => [...prev, { type: 'ai', text: answer }]);
+    let answer;
+    let usedFallback = false;
+    try {
+      const res = await api.chat(text);
+      answer = res.reply || 'No reply from assistant.';
+    } catch (err) {
+      // Chat API not configured (503) or OpenAI error (502): use keyword-based answers
+      usedFallback = true;
+      answer = await getAnswerForQuestion(text, growthRate, projectionYears);
+    }
+    const fallbackNotice = usedFallback
+      ? '*(Assistant unavailable — answer from dashboard data.)*\n\n'
+      : '';
+    setMessages((prev) => [...prev, { type: 'ai', text: fallbackNotice + answer }]);
     setLoading(false);
-  }, [input]);
+  }, [input, growthRate, projectionYears]);
 
   const handleSuggestedClick = (question) => {
     setInput(question);

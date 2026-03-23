@@ -81,8 +81,9 @@ docker run --rm --env-file .env water-demand-api python scripts/seed_sanmiguel.p
 | GET | /analytics/land-use | Land-use breakdown |
 | GET | /analytics/forecast | Forecast (growth_rate, years) |
 | GET | /analytics/scenario-comparison | 90 L/c vs 100 L/c |
+| POST | /chat | Chat with water-demand assistant (OpenAI; requires `OPENAI_API_KEY`) |
 
-All analytics and parcel consumption values are in **liters**. Frontend converts to m³ for display.
+All analytics and parcel consumption values are in **liters**. The **chat** endpoint uses OpenAI (gpt-4o-mini) and is scoped to water demand only; if `OPENAI_API_KEY` is not set, the endpoint returns 503 and the frontend falls back to keyword-based answers. Frontend converts to m³ for display.
 
 ---
 
@@ -103,6 +104,7 @@ All analytics and parcel consumption values are in **liters**. Frontend converts
    - **CORS_ORIGINS**: Your frontend origin(s), e.g. `https://your-app.onrender.com` or `http://localhost:5173` (comma-separated for several).  
    - **DATABASE_URL** (optional): If you add a PostgreSQL database (New → PostgreSQL), copy its **Internal Database URL** and set `DATABASE_URL` to that.  
      - If you don’t set `DATABASE_URL`, the app uses SQLite; on Render the filesystem is ephemeral, so data is lost on redeploy. For production, use PostgreSQL.
+   - **OPENAI_API_KEY** (optional): For the Chat assistant. Get a key from [OpenAI](https://platform.openai.com/api-keys). If not set, chat returns 503 and the frontend uses keyword-based answers.
 
 4. **Deploy**  
    - Save; Render will build and run the API.  
