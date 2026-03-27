@@ -156,13 +156,60 @@ export async function getScenarioComparison() {
 }
 
 /**
+ * Download multi-page PDF report (matches dashboard scenario, growth, horizon, optional land-use filter).
+ */
+export async function downloadPdfReport({
+  scenario = 90,
+  growthRate = 2,
+  projectionYears = 5,
+  landUse = "All",
+} = {}) {
+  const params = new URLSearchParams();
+  params.set("scenario", String(scenario));
+  params.set("growth_rate", String(growthRate ?? 2));
+  params.set("years", String(projectionYears ?? 5));
+  if (landUse && landUse !== "All") {
+    params.set("land_use", landUse);
+  }
+  const base = API_BASE.replace(/\/+$/, "");
+  const url = `${base}/export/pdf-report?${params}`;
+  const res = await fetch(url, { headers: headers() });
+  if (res.status === 401) {
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userName");
+    window.dispatchEvent(new Event("auth:logout"));
+  }
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    const msg = Array.isArray(err.detail)
+      ? err.detail.map((e) => e.msg || JSON.stringify(e)).join(". ")
+      : err.detail || res.statusText;
+    throw new Error(typeof msg === "string" ? msg : JSON.stringify(msg));
+  }
+  const blob = await res.blob();
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `water-demand-report-${Date.now()}.pdf`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/**
  * Chat with the water-demand assistant (OpenAI, domain-bound).
  * Returns { reply }. On 503/502 (not configured or OpenAI error), throws so caller can fall back.
+ * Pass growth_rate / projection_years so the model uses the same forecast as the dashboard.
  */
-export async function chat(message) {
+export async function chat(message, options = {}) {
+  const payload = { message: String(message).trim() };
+  if (options.growth_rate != null && options.growth_rate !== "") {
+    payload.growth_rate = Number(options.growth_rate);
+  }
+  if (options.projection_years != null && options.projection_years !== "") {
+    payload.projection_years = Number(options.projection_years);
+  }
   const data = await apiFetch("/chat", {
     method: "POST",
-    body: JSON.stringify({ message: String(message).trim() }),
+    body: JSON.stringify(payload),
   });
   return data;
 }

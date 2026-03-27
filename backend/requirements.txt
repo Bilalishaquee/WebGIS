@@ -24,3 +24,7 @@ pyshp>=2.3
 
 # Chatbot (OpenAI)
 openai>=1.0.0
+
+# PDF reports (export)
+reportlab>=4.0.0
+matplotlib>=3.8.0

@@ -1,4 +1,4 @@
-import { Droplet, Download, LogOut, ChevronRight } from 'lucide-react';
+import { Droplet, Download, LogOut, ChevronRight, Loader2 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const PAGE_TITLES = {
@@ -12,7 +12,7 @@ const PAGE_TITLES = {
   '/data-sources': 'Data Sources',
 };
 
-const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, projectionYears, onProjectionChange, onExport, showFullControls = true }) => {
+const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, projectionYears, onProjectionChange, onExport, exportLoading = false, showFullControls = true }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const pageTitle = PAGE_TITLES[location.pathname] || 'Dashboard';
@@ -24,20 +24,6 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
   };
 
   const handleExport = () => {
-    const exportData = {
-      scenario,
-      growthRate,
-      projectionYears,
-      timestamp: new Date().toISOString(),
-    };
-    const dataStr = JSON.stringify(exportData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `water-demand-export-${Date.now()}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
     onExport?.();
   };
   return (
@@ -120,11 +106,18 @@ const HeaderBar = ({ scenario, onScenarioChange, growthRate, onGrowthChange, pro
           </select>
           
             <button
+              type="button"
               onClick={handleExport}
-              className="btn-primary flex items-center gap-2 text-xs sm:text-sm"
+              disabled={exportLoading}
+              aria-busy={exportLoading}
+              className="btn-primary flex items-center gap-2 text-xs sm:text-sm disabled:opacity-60 disabled:cursor-wait min-w-[7.5rem] justify-center"
             >
-              <Download size={14} />
-              <span className="hidden sm:inline">Export</span>
+              {exportLoading ? (
+                <Loader2 size={14} className="animate-spin shrink-0" aria-hidden />
+              ) : (
+                <Download size={14} className="shrink-0" />
+              )}
+              <span>{exportLoading ? 'Generating…' : 'Export'}</span>
             </button>
           </>
         )}

@@ -18,9 +18,13 @@ const Dashboard = () => {
     setScenario,
     setGrowthRate,
     setProjectionYears,
-    handleExport
+    setReportLandUse,
   } = useOutletContext();
   const [selectedLandUse, setSelectedLandUse] = useState('All');
+
+  useEffect(() => {
+    setReportLandUse?.(selectedLandUse);
+  }, [selectedLandUse, setReportLandUse]);
   const [hoveredParcel, setHoveredParcel] = useState(null);
   
   const { parcels, loading: parcelsLoading, error: parcelsError, refetch: refetchParcels } = useParcels(selectedLandUse, 0, 500);
