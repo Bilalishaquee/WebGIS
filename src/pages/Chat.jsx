@@ -25,9 +25,19 @@ async function getAnswerForQuestion(question, growthRate = 2, years = 5) {
       return `**Consumption by parcel type:**\n${lines}\n\nThis shows how total demand is distributed across Residential, Commercial, and Mixed-use parcels.`;
     }
 
-    if (/\b(growth|future|projection|forecast|year.*growth|5 year|predict)\b/.test(q)) {
-      const match = q.match(/(\d+(?:\.\d+)?)\s*%\s*growth|growth\s*(\d+(?:\.\d+)?)/);
-      const rate = match ? parseFloat(match[1] || match[2]) : growthRate;
+    if (/\b(growth|future|projection|forecast|year.*growth|5 year|predict|increase.*consumption|increase.*demand)\b/.test(q)) {
+      const fromToPct = q.match(
+        /from\s+(\d+(?:\.\d+)?)\s*(?:%|percent)\s+to\s+(\d+(?:\.\d+)?)\s*(?:%|percent)/,
+      );
+      const nToNPct = q.match(/\b(\d+(?:\.\d+)?)\s+to\s+(\d+(?:\.\d+)?)\s*(?:%|percent)\b/);
+      const simple = q.match(/(\d+(?:\.\d+)?)\s*%\s*growth|growth\s*(?:of|at)?\s*(\d+(?:\.\d+)?)/);
+      const rate = fromToPct
+        ? parseFloat(fromToPct[2])
+        : nToNPct
+          ? parseFloat(nToNPct[2])
+          : simple
+            ? parseFloat(simple[1] || simple[2])
+            : growthRate;
       const { data } = await api.getForecast(rate, years);
       const last = data[data.length - 1];
       const first = data[0];

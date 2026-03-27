@@ -39,7 +39,8 @@ Rules:
 2. Express volumes in **m³** (cubic meters). The JSON includes `daily_m3`, `monthly_total_m3`, `yearly_m3`, and `*_liters` — prefer the m³ fields for user-facing text.
 3. If the JSON lacks a specific figure, say so briefly instead of guessing.
 4. Keep answers concise: short paragraphs or bullets. No long preambles.
-5. If the user asks about unrelated topics (general knowledge, other cities, coding, politics), refuse briefly and redirect to water demand for this dashboard.
+5. **Stay helpful on dashboard topics.** Always answer when the question is about: neighborhood or residential/commercial/mixed-use demand, totals, forecasts, growth **%**, changing the growth assumption, comparing 0.09 vs 0.1 m³/c, or "how would demand change if…". Use the JSON and `forecast_parameters` for numbers.
+6. Refuse **only** for clearly unrelated topics (other cities, coding, politics, sports, etc.) — one short sentence plus a redirect. **Do not** refuse growth-rate or residential-demand questions; if they ask "how do we increase real-world use," explain this app only **estimates** demand from parcel data, then briefly tie to what the model uses (population, land use, per-capita scenario) and what a higher **forecast growth %** would imply for projected totals.
 
 """
 
@@ -50,7 +51,7 @@ Before you reply, verify:
 1. Every volume you cite is consistent with the JSON (`scenario_0_09_m3c`, `scenario_0_1_m3c`, `land_use_breakdown`, `forecast_yearly_totals_explanation`, `scenario_difference_yearly_m3`, `forecast_parameters`).
 2. You name scenarios as **0.09 m³/c** (lower) and **0.1 m³/c** (higher), not liters.
 3. Any forecast you mention uses the same **annual_growth_percent** and **horizon_years** as in `forecast_parameters`. If **forecast_parameters.how_set** explains that values came from the user's question, state that clearly (e.g. "at 3% annual growth over 5 years").
-4. If the question is off-topic, answer in one short sentence declining and suggesting a water-demand question.
+4. If the question is clearly unrelated to this dashboard, answer in one short sentence declining and suggesting a water-demand question. Otherwise answer fully.
 
 Now answer the user's message below.
 """
@@ -63,15 +64,20 @@ def _parse_forecast_intent(text: str) -> tuple[float | None, int | None]:
     years: int | None = None
 
     for pattern in (
+        r"from\s+(\d+(?:\.\d+)?)\s*(?:%|percent)\s+to\s+(\d+(?:\.\d+)?)\s*(?:%|percent)",
+        r"\b(\d+(?:\.\d+)?)\s+to\s+(\d+(?:\.\d+)?)\s*(?:%|percent)\b",
         r"(?:with|at|using)\s+(\d+(?:\.\d+)?)\s*%\s*(?:annual\s*)?(?:growth|increase|rate)?",
         r"(\d+(?:\.\d+)?)\s*%\s*(?:annual\s*)?(?:growth|increase)(?:\s*rate)?",
         r"\bgrowth\s*(?:rate\s*)?(?:of|at|=)?\s*(\d+(?:\.\d+)?)\s*%",
         r"(?:annual|yearly)\s+growth\s*(?:of|at|=)?\s*(\d+(?:\.\d+)?)\s*%",
         r"\b(\d+(?:\.\d+)?)\s*%\s*per\s*year\b",
+        r"increase\s+(?:the\s+)?(?:water\s+)?(?:consumption|demand)\s+(?:from\s+)?(?:\d+(?:\.\d+)?\s*(?:%|percent)\s+)?to\s+(\d+(?:\.\d+)?)\s*(?:%|percent)",
     ):
         m = re.search(pattern, t)
         if m:
-            v = float(m.group(1))
+            groups = m.groups()
+            # "from 2% to 3%" / "2 to 3 percent" → use the second number as the forecast growth rate
+            v = float(groups[1]) if len(groups) >= 2 and groups[1] is not None else float(groups[0])
             if 0.0 <= v <= 20.0:
                 growth = v
                 break
