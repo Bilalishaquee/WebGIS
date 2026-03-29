@@ -11,9 +11,59 @@ const suggestedQuestions = [
   'Compare scenarios: 0.09 m³/c vs 0.1 m³/c per person per day.',
 ];
 
+async function loadAllParcelsForChat() {
+  const acc = [];
+  let skip = 0;
+  const limit = 500;
+  for (;;) {
+    const res = await api.getParcels('All', skip, limit);
+    acc.push(...res.parcels);
+    if (res.parcels.length < limit || acc.length >= res.total) break;
+    skip += limit;
+  }
+  return acc;
+}
+
 async function getAnswerForQuestion(question, growthRate = 2, years = 5) {
   const q = question.toLowerCase().trim();
   try {
+    const thresholdConsumption =
+      q.match(/(?:more than|greater than|over|above)\s+(\d+)\s+(?:people|persons|residents|inhabitants)\b/) ||
+      q.match(
+        /(?:properties?|parcels?|lots?)\s+with\s+(?:more than|over|above)\s+(\d+)\s+(?:people|persons)\b/,
+      );
+    if (
+      thresholdConsumption &&
+      /\b(consumption|demand|percentage|percent|share|proportion|correspond)\b/.test(q)
+    ) {
+      const t = parseInt(thresholdConsumption[1], 10);
+      if (t >= 0 && t <= 2000) {
+        const parcels = await loadAllParcelsForChat();
+        const over = parcels.filter((p) => p.population > t);
+        const y90Over = over.reduce((s, p) => s + p.yearly90, 0);
+        const y90Total = parcels.reduce((s, p) => s + p.yearly90, 0);
+        const y100Over = over.reduce((s, p) => s + p.yearly100, 0);
+        const y100Total = parcels.reduce((s, p) => s + p.yearly100, 0);
+        const pct90 = y90Total > 0 ? ((y90Over / y90Total) * 100).toFixed(1) : '0';
+        const pct100 = y100Total > 0 ? ((y100Over / y100Total) * 100).toFixed(1) : '0';
+        return `**Consumption for parcels with more than ${t} people** (from parcel records):\n• **Parcels matching:** ${over.length} of ${parcels.length}\n• **Share of neighborhood yearly demand (0.09 m³/c basis):** ${pct90}% (${api.formatM3(y90Over)} of ${api.formatM3(y90Total)})\n• **Share (0.1 m³/c basis):** ${pct100}% (${api.formatM3(y100Over)} of ${api.formatM3(y100Total)})\n\nOnly parcels whose **population** is strictly greater than ${t} are included.`;
+      }
+    }
+
+    if (
+      /\b(population|people|residents|inhabitants|persons)\b/.test(q) ||
+      /\bhow many\s+(people|persons|residents)\b/.test(q) ||
+      /\bnumber of\s+(people|persons|residents)\b/.test(q)
+    ) {
+      const [all, res, com, mix] = await Promise.all([
+        api.getSummary(90, null),
+        api.getSummary(90, 'Residential'),
+        api.getSummary(90, 'Commercial'),
+        api.getSummary(90, 'Mixed-use'),
+      ]);
+      return `**Population (people in parcels — from parcel records):**\n• **Neighborhood total:** ${all.population.toLocaleString()}\n• **Residential:** ${res.population.toLocaleString()} people\n• **Commercial:** ${com.population.toLocaleString()} people\n• **Mixed-use:** ${mix.population.toLocaleString()} people\n\nEach parcel stores an estimated population used for water-demand calculations.`;
+    }
+
     if (/\b(total|yearly|year|daily|monthly|demand|consumption|neighborhood|aggregate)\b/.test(q) && !/\b(by|per|type|parcel|residential|commercial|mixed)\b/.test(q)) {
       const [s90, s100] = await Promise.all([api.getSummary(90), api.getSummary(100)]);
       return `**Total estimated consumption (neighborhood):**\n• **0.09 m³/c scenario:** ${api.formatM3(s90.yearly)} yearly, ${api.formatM3(s90.daily)} daily. Population: ${s90.population.toLocaleString()}.\n• **0.1 m³/c scenario:** ${api.formatM3(s100.yearly)} yearly, ${api.formatM3(s100.daily)} daily.\n\nThese are aggregated from all parcels using the current parcel attributes and land-use coefficients.`;

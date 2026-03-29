@@ -28,7 +28,9 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 SYSTEM_PROMPT = """You are the Water Demand Assistant for a single neighborhood dashboard. Explain estimated water demand using ONLY the JSON object that appears right after this text (no other sources).
 
 Scope (stay on topic):
-- Neighborhood totals: daily, monthly, or yearly demand; population; parcel count
+- Neighborhood totals: daily, monthly, or yearly demand; parcel count
+- **Population (people):** The JSON always includes `population_people` — total people across parcels, people summed by land use, and min/max/mean people per parcel. **Use these fields** when the user asks how many people, residents, population, or "number of persons in parcels." Do **not** say population is unavailable unless those objects are empty.
+- **Consumption vs parcel population:** The JSON includes `consumption_by_parcel_population_threshold` — for each threshold **N**, yearly consumption summed over parcels whose population is **strictly greater than N**, plus **percent_of_neighborhood_consumption** for both 0.09 and 0.1 m³/c scenarios. **Use this** for questions like "properties with more than 10 people," "parcels over 15 residents," or share of demand from high-occupancy parcels. Do **not** say this cannot be computed from the data if the relevant threshold key is present.
 - Demand by land use: Residential, Commercial, Mixed-use (counts and shares)
 - Two per-capita scenarios: **0.09 m³/c** (lower) vs **0.1 m³/c** (higher) per person per day — never call them "90 L" or "100 L" in your answer; use m³/c labels only
 - Forecast rows: demand at year 0 and at the horizon year, using **forecast_parameters** in the JSON. If the note says the user asked for a specific % or years, those values were used — answer using that growth rate and horizon, not the dashboard default unless the note says otherwise
@@ -48,7 +50,7 @@ Rules:
 FINAL_INSTRUCTIONS = """
 ---
 Before you reply, verify:
-1. Every volume you cite is consistent with the JSON (`scenario_0_09_m3c`, `scenario_0_1_m3c`, `land_use_breakdown`, `forecast_yearly_totals_explanation`, `scenario_difference_yearly_m3`, `forecast_parameters`).
+1. Every volume you cite is consistent with the JSON (`scenario_0_09_m3c`, `scenario_0_1_m3c`, `land_use_breakdown`, `population_people`, `consumption_by_parcel_population_threshold`, `forecast_yearly_totals_explanation`, `scenario_difference_yearly_m3`, `forecast_parameters`).
 2. You name scenarios as **0.09 m³/c** (lower) and **0.1 m³/c** (higher), not liters.
 3. Any forecast you mention uses the same **annual_growth_percent** and **horizon_years** as in `forecast_parameters`. If **forecast_parameters.how_set** explains that values came from the user's question, state that clearly (e.g. "at 3% annual growth over 5 years").
 4. If the question is clearly unrelated to this dashboard, answer in one short sentence declining and suggesting a water-demand question. Otherwise answer fully.
@@ -100,6 +102,24 @@ def _parse_forecast_intent(text: str) -> tuple[float | None, int | None]:
     return growth, years
 
 
+def _parse_population_threshold_from_question(text: str) -> int | None:
+    """e.g. 'more than 10 people' -> 10; used to add that threshold to context."""
+    t = text.lower()
+    patterns = (
+        r"(?:more than|greater than|over|above)\s+(\d+)\s+(?:people|persons|residents|inhabitants)\b",
+        r"\bparcels?\s+with\s+(?:more than|over|above)\s+(\d+)\s+(?:people|persons)\b",
+        r"\bproperties?\s+with\s+(?:more than|over|above)\s+(\d+)\s+(?:people|persons)\b",
+        r"\bpopulation\s*(?:>|greater than|more than)\s*(\d+)\b",
+    )
+    for pat in patterns:
+        m = re.search(pat, t)
+        if m:
+            v = int(m.group(1))
+            if 0 <= v <= 2000:
+                return v
+    return None
+
+
 def _m3(liters: float) -> str:
     if liters >= 1e6:
         return f"{liters / 1e6:.2f}M m³"
@@ -108,11 +128,44 @@ def _m3(liters: float) -> str:
     return f"{liters / 1000:.2f} m³"
 
 
+def _consumption_share_population_gt(
+    parcels: list,
+    threshold: int,
+    yearly90_total: float,
+    yearly100_total: float,
+) -> dict[str, float | int | str]:
+    """Sum yearly consumption for parcels with population strictly greater than threshold."""
+    over = [p for p in parcels if int(p.population or 0) > threshold]
+    y90 = sum(
+        parcel_yearly_consumption(p.population, L_PER_CAPITA_90, p.land_use) for p in over
+    )
+    y100 = sum(
+        parcel_yearly_consumption(p.population, L_PER_CAPITA_100, p.land_use) for p in over
+    )
+    return {
+        "description": f"Parcels with population strictly greater than {threshold} people",
+        "parcel_count": len(over),
+        "yearly_consumption_liters_0_09": round(y90, 2),
+        "yearly_consumption_m3_0_09": _m3(y90),
+        "percent_of_neighborhood_consumption_0_09": round(
+            (y90 / yearly90_total * 100) if yearly90_total else 0.0,
+            2,
+        ),
+        "yearly_consumption_liters_0_1": round(y100, 2),
+        "yearly_consumption_m3_0_1": _m3(y100),
+        "percent_of_neighborhood_consumption_0_1": round(
+            (y100 / yearly100_total * 100) if yearly100_total else 0.0,
+            2,
+        ),
+    }
+
+
 async def _build_context(
     db: AsyncSession,
     growth_rate: float = 2.0,
     years: int = 5,
     forecast_how_set: str | None = None,
+    user_message: str | None = None,
 ) -> str:
     growth_rate = max(0.0, min(20.0, float(growth_rate)))
     r = await db.execute(select(Parcel))
@@ -155,9 +208,50 @@ async def _build_context(
         f"({growth_rate}% annual growth)."
     )
 
+    pops = [int(p.population or 0) for p in parcels]
+    pop_by_land_use: dict[str, int] = {}
+    for p in parcels:
+        lu = p.land_use
+        pop_by_land_use[lu] = pop_by_land_use.get(lu, 0) + int(p.population or 0)
+
+    per_parcel: dict[str, int | float] = {}
+    if pops:
+        per_parcel = {
+            "min_people": min(pops),
+            "max_people": max(pops),
+            "mean_people_per_parcel": round(sum(pops) / len(pops), 2),
+        }
+
+    population_people = {
+        "total_across_all_parcels": total_pop,
+        "people_by_land_use": pop_by_land_use,
+        "per_parcel_stats": per_parcel,
+        "note": "Each parcel has an estimated population (people). Sums above are from the parcel database.",
+    }
+
+    threshold_set = {5, 10, 15, 20, 25, 50}
+    extra = _parse_population_threshold_from_question(user_message or "")
+    if extra is not None:
+        threshold_set.add(max(0, min(2000, extra)))
+
+    consumption_by_parcel_population_threshold = {
+        "basis": (
+            "For each threshold N, only parcels with population > N are included. "
+            "Percentages are share of total neighborhood yearly consumption (same scenarios as elsewhere)."
+        ),
+        "neighborhood_yearly_total_liters_0_09": round(yearly90, 2),
+        "neighborhood_yearly_total_liters_0_1": round(yearly100, 2),
+        "thresholds": {
+            str(t): _consumption_share_population_gt(parcels, t, yearly90, yearly100)
+            for t in sorted(threshold_set)
+        },
+    }
+
     return json.dumps({
         "parcel_count": len(parcels),
         "population": total_pop,
+        "population_people": population_people,
+        "consumption_by_parcel_population_threshold": consumption_by_parcel_population_threshold,
         "forecast_parameters": {
             "annual_growth_percent": growth_rate,
             "horizon_years": years,
@@ -234,7 +328,13 @@ async def chat(
     )
 
     try:
-        context = await _build_context(db, growth_rate=gr, years=py, forecast_how_set=forecast_how_set)
+        context = await _build_context(
+            db,
+            growth_rate=gr,
+            years=py,
+            forecast_how_set=forecast_how_set,
+            user_message=message,
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to build context: {e}") from e
 
