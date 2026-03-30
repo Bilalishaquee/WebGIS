@@ -110,13 +110,50 @@ def _parse_population_threshold_from_question(text: str) -> int | None:
         r"\bparcels?\s+with\s+(?:more than|over|above)\s+(\d+)\s+(?:people|persons)\b",
         r"\bproperties?\s+with\s+(?:more than|over|above)\s+(\d+)\s+(?:people|persons)\b",
         r"\bpopulation\s*(?:>|greater than|more than)\s*(\d+)\b",
+        # Spanish
+        r"(?:más de|mas de|mayor que|por encima de|sobre)\s+(\d+)\s+(?:personas|habitantes|residentes)\b",
+        r"(?:predios|propiedades|parcelas|lotes)\s+(?:con\s+poblaci[oó]n\s+)?(?:más de|mas de|mayor que|por encima de|sobre)\s+(\d+)",
+        r"(?:poblaci[oó]n)\s*(?:>\s*|mayor que|más de|mas de|por encima de|sobre)\s*(\d+)",
     )
     for pat in patterns:
         m = re.search(pat, t)
         if m:
-            v = int(m.group(1))
+            # Some regexes have the threshold as group(1), others as group(2)
+            v = int(next(g for g in m.groups() if g is not None))
             if 0 <= v <= 2000:
                 return v
+    return None
+
+
+def _extract_recent_history_text(history: list[dict[str, str]] | None, limit: int = 4) -> str:
+    if not history:
+        return ""
+    parts: list[str] = []
+    for item in history[-limit:]:
+        role = (item or {}).get("role")
+        content = (item or {}).get("content")
+        if role in ("user", "assistant") and content:
+            parts.append(str(content))
+    return " ".join(parts)
+
+
+def _parse_followup_threshold_with_context(message: str, history_text: str) -> int | None:
+    """
+    Handle short follow-ups like:
+    - "con 8" / "with 8"
+    when prior turns already mention people/population thresholds.
+    """
+    if not history_text:
+        return None
+    history_l = history_text.lower()
+    if not re.search(r"(people|persons|residents|inhabitants|personas|habitantes|residentes|poblaci[oó]n)", history_l):
+        return None
+
+    m = re.search(r"\b(?:con|with)\s+(\d{1,4})\b", (message or "").lower())
+    if m:
+        v = int(m.group(1))
+        if 0 <= v <= 2000:
+            return v
     return None
 
 
@@ -284,6 +321,7 @@ class ChatRequest(BaseModel):
     message: str
     growth_rate: float | None = None  # matches dashboard; used for forecast in context
     projection_years: int | None = None
+    history: list[dict[str, str]] | None = None
 
 
 class ChatResponse(BaseModel):
@@ -298,22 +336,79 @@ async def chat(
 ):
     """Answer the user's question about water demand using OpenAI, scoped to dashboard data only."""
     settings = get_settings()
-    if not settings.OPENAI_API_KEY or not settings.OPENAI_API_KEY.strip():
-        raise HTTPException(
-            status_code=503,
-            detail="Chat is not configured (OPENAI_API_KEY not set). Use the dashboard for data.",
-        )
+    openai_configured = bool(settings.OPENAI_API_KEY and settings.OPENAI_API_KEY.strip())
 
     message = (body.message or "").strip()
     if not message:
         raise HTTPException(status_code=400, detail="message is required")
+
+    history_text = _extract_recent_history_text(body.history, limit=4)
+    parsing_text = f"{history_text}\n{message}".strip()
+    message_l = message.lower()
+
+    # Deterministic numeric answers for threshold consumption/share queries.
+    # This avoids inconsistencies from the LLM when the user asks for exact percentages.
+    # Prefer the number from the current message; use history-based follow-up only when explicit.
+    threshold_from_message = _parse_population_threshold_from_question(message)
+    threshold_followup = _parse_followup_threshold_with_context(message, history_text)
+    threshold = threshold_from_message if threshold_from_message is not None else threshold_followup
+
+    # IMPORTANT: trigger deterministic threshold math based on the CURRENT message,
+    # not historical text, to avoid hijacking unrelated questions.
+    wants_consumption_share = (
+        bool(
+            re.search(
+                r"(percent|porcentaje|%|share|proporci|proportion|equivale|corresponde|parte)",
+                message_l,
+            )
+        )
+        and bool(re.search(r"(consum|demand|demanda|consumo)", message_l))
+    )
+    # Short follow-up like "with 8" can rely on prior context.
+    is_short_threshold_followup = (
+        threshold_followup is not None
+        and bool(re.search(r"\b(con|with)\s+\d{1,4}\b", message_l))
+    )
+    if threshold is not None and (wants_consumption_share or is_short_threshold_followup):
+        r = await db.execute(select(Parcel))
+        parcels = list(r.scalars().all())
+        yearly90_total = sum(
+            parcel_yearly_consumption(p.population, L_PER_CAPITA_90, p.land_use) for p in parcels
+        ) if parcels else 0
+        yearly100_total = sum(
+            parcel_yearly_consumption(p.population, L_PER_CAPITA_100, p.land_use) for p in parcels
+        ) if parcels else 0
+        res = _consumption_share_population_gt(
+            parcels, threshold, yearly90_total=yearly90_total, yearly100_total=yearly100_total
+        )
+
+        is_es = bool(re.search(r"(porcentaje|consumo|predios|vecindario|personas|más de|mas de)", message_l))
+        if is_es:
+            reply = (
+                f"Para los predios con población estrictamente mayor que {threshold} personas:\n"
+                f"• Consumo anual (0.09 m³/c): {res['percent_of_neighborhood_consumption_0_09']}% "
+                f"del total del vecindario ({res['yearly_consumption_m3_0_09']}).\n"
+                f"• Consumo anual (0.1 m³/c): {res['percent_of_neighborhood_consumption_0_1']}% "
+                f"del total del vecindario ({res['yearly_consumption_m3_0_1']}).\n"
+                f"\nPredios que cumplen: {res['parcel_count']}."
+            )
+        else:
+            reply = (
+                f"Parcels with population strictly greater than {threshold} people:\n"
+                f"• Share of neighborhood annual demand (0.09 m³/c): {res['percent_of_neighborhood_consumption_0_09']}% "
+                f"({res['yearly_consumption_m3_0_09']} yearly).\n"
+                f"• Share of neighborhood annual demand (0.1 m³/c): {res['percent_of_neighborhood_consumption_0_1']}% "
+                f"({res['yearly_consumption_m3_0_1']} yearly).\n"
+                f"\nMatching parcels: {res['parcel_count']}."
+            )
+        return ChatResponse(reply=reply)
 
     gr = 2.0 if body.growth_rate is None else float(body.growth_rate)
     py = 5 if body.projection_years is None else int(body.projection_years)
     gr = max(0.0, min(20.0, gr))
     py = max(1, min(20, py))
 
-    msg_growth, msg_years = _parse_forecast_intent(message)
+    msg_growth, msg_years = _parse_forecast_intent(parsing_text)
     how_parts: list[str] = []
     if msg_growth is not None:
         gr = msg_growth
@@ -333,7 +428,7 @@ async def chat(
             growth_rate=gr,
             years=py,
             forecast_how_set=forecast_how_set,
-            user_message=message,
+            user_message=parsing_text,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to build context: {e}") from e
@@ -341,14 +436,26 @@ async def chat(
     system_content = SYSTEM_PROMPT + "\n" + context + FINAL_INSTRUCTIONS
 
     try:
+        if not openai_configured:
+            raise HTTPException(
+                status_code=503,
+                detail="Chat is not configured (OPENAI_API_KEY not set). Use the dashboard for data.",
+            )
         from openai import OpenAI
         client = OpenAI(api_key=settings.OPENAI_API_KEY.strip())
+
+        openai_messages: list[dict[str, str]] = [{"role": "system", "content": system_content}]
+        if body.history:
+            for item in body.history[-8:]:
+                role = (item or {}).get("role")
+                content = (item or {}).get("content")
+                if role in ("user", "assistant") and content:
+                    openai_messages.append({"role": role, "content": content})
+        openai_messages.append({"role": "user", "content": message})
+
         response = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_content},
-                {"role": "user", "content": message},
-            ],
+            messages=openai_messages,
             max_tokens=900,
             temperature=0.25,
         )

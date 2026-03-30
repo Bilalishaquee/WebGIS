@@ -1,8 +1,50 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Send, Sparkles } from 'lucide-react';
+import { Plus, Send, Sparkles } from 'lucide-react';
 import * as api from '../api/client';
 import { ChatMarkdown } from '../components/ChatMarkdown';
+
+const CHAT_STORAGE_VERSION = 'v1';
+const CHAT_MAX_STORED = 100;
+
+function chatStorageKey() {
+  try {
+    const id = localStorage.getItem('userId');
+    return `webgis_chat_messages_${CHAT_STORAGE_VERSION}:${id || 'anon'}`;
+  } catch {
+    return `webgis_chat_messages_${CHAT_STORAGE_VERSION}:anon`;
+  }
+}
+
+function loadPersistedMessages() {
+  try {
+    const raw = localStorage.getItem(chatStorageKey());
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (m) =>
+          m &&
+          (m.type === 'user' || m.type === 'ai') &&
+          typeof m.text === 'string',
+      )
+      .slice(-CHAT_MAX_STORED);
+  } catch {
+    return [];
+  }
+}
+
+function persistMessages(messages) {
+  try {
+    localStorage.setItem(
+      chatStorageKey(),
+      JSON.stringify(messages.slice(-CHAT_MAX_STORED)),
+    );
+  } catch {
+    // Quota or private mode — ignore
+  }
+}
 
 const suggestedQuestions = [
   'What is the total estimated consumption for the neighborhood?',
@@ -120,10 +162,20 @@ const Chat = () => {
   const outletContext = useOutletContext() || {};
   const growthRate = outletContext.growthRate ?? 2;
   const projectionYears = outletContext.projectionYears ?? 5;
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState(loadPersistedMessages);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef(null);
+
+  const startNewChat = useCallback(() => {
+    if (loading) return;
+    setMessages([]);
+    setInput('');
+  }, [loading]);
+
+  useEffect(() => {
+    persistMessages(messages);
+  }, [messages]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -147,9 +199,15 @@ const Chat = () => {
       let answer;
       let usedFallback = false;
       try {
+        // Pass short conversation history so follow-up questions can be interpreted consistently.
+        const history = messages.slice(-8).map((m) => ({
+          role: m.type === 'user' ? 'user' : 'assistant',
+          content: m.text,
+        }));
         const res = await api.chat(text, {
           growth_rate: growthRate,
           projection_years: projectionYears,
+          history,
         });
         answer = res.reply || 'No reply from assistant.';
       } catch (err) {
@@ -162,7 +220,7 @@ const Chat = () => {
       setMessages((prev) => [...prev, { type: 'ai', text: fallbackNotice + answer }]);
       setLoading(false);
     },
-    [input, growthRate, projectionYears, loading],
+    [input, growthRate, projectionYears, loading, messages],
   );
 
   const handleSuggestedClick = (question) => {
@@ -174,14 +232,25 @@ const Chat = () => {
   return (
     <div className="flex h-full min-h-0 flex-col bg-gradient-to-b from-gray-50/80 to-white">
       <div className="shrink-0 border-b border-gray-200/70 bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6 lg:pl-6 pl-16">
-        <div className="mx-auto flex max-w-3xl items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
-            <Sparkles className="h-4 w-4 text-white" strokeWidth={2} />
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-md shadow-blue-500/20">
+              <Sparkles className="h-4 w-4 text-white" strokeWidth={2} />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight text-gray-900">Water Demand Assistant</h2>
+              <p className="text-xs text-gray-500">Answers use the same parcel data as your dashboard</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-lg font-semibold tracking-tight text-gray-900">Water Demand Assistant</h2>
-            <p className="text-xs text-gray-500">Answers use the same parcel data as your dashboard</p>
-          </div>
+          <button
+            type="button"
+            onClick={startNewChat}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:border-blue-300 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Plus size={14} />
+            New chat
+          </button>
         </div>
       </div>
 

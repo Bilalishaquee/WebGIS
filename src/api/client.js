@@ -207,6 +207,9 @@ export async function chat(message, options = {}) {
   if (options.projection_years != null && options.projection_years !== "") {
     payload.projection_years = Number(options.projection_years);
   }
+  if (Array.isArray(options.history) && options.history.length > 0) {
+    payload.history = options.history;
+  }
   const data = await apiFetch("/chat", {
     method: "POST",
     body: JSON.stringify(payload),
