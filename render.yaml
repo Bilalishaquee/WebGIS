@@ -1,0 +1,18 @@
+# Use this Blueprint when the Git repo root is the WebGIS folder (not the parent julian/).
+# SPA fallback matches vercel.json / render.json rewrites.
+
+services:
+  - type: web
+    name: water-demand-dashboard
+    runtime: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_URL
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
