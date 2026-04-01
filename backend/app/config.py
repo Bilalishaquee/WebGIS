@@ -12,8 +12,14 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
-    # CORS
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,http://localhost:3001,http://127.0.0.1:5173,http://127.0.0.1:3000,http://127.0.0.1:3001, https://web-gis-pi.vercel.app"
+    # CORS: comma-separated exact origins (browsers send Origin exactly).
+    CORS_ORIGINS: str = (
+        "http://localhost:5173,http://localhost:3000,http://localhost:3001,"
+        "http://127.0.0.1:5173,http://127.0.0.1:3000,http://127.0.0.1:3001,"
+        "https://web-gis-pi.vercel.app,https://webgis-2-0nt0.onrender.com"
+    )
+    # Also allow Render HTTPS frontends (e.g. https://webgis-2-xxxx.onrender.com). Set to empty to disable.
+    CORS_ORIGIN_REGEX: str = r"https://.*\.onrender\.com"
 
     # Consumption model (L per capita per day)
     DEFAULT_L_PER_CAPITA_LOW: int = 90

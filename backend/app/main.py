@@ -23,13 +23,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[x.strip() for x in settings.CORS_ORIGINS.split(",")],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+_origins = [x.strip() for x in settings.CORS_ORIGINS.split(",") if x.strip()]
+_cors_kw: dict = {
+    "allow_origins": _origins,
+    "allow_credentials": True,
+    "allow_methods": ["*"],
+    "allow_headers": ["*"],
+}
+_rx = (settings.CORS_ORIGIN_REGEX or "").strip()
+if _rx:
+    _cors_kw["allow_origin_regex"] = _rx
+app.add_middleware(CORSMiddleware, **_cors_kw)
 
 app.include_router(auth.router)
 app.include_router(parcels.router)
