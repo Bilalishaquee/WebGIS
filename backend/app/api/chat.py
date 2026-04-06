@@ -29,7 +29,7 @@ SYSTEM_PROMPT = """You are the Water Demand Assistant for a single neighborhood 
 
 Scope (stay on topic):
 - Neighborhood totals: daily, monthly, or yearly demand; parcel count
-- **Population (people):** The JSON always includes `population_people` — total people across parcels, people summed by land use, and min/max/mean people per parcel. **Use these fields** when the user asks how many people, residents, population, or "number of persons in parcels." Do **not** say population is unavailable unless those objects are empty.
+- **Population (people):** The JSON includes `parcels_people` — each parcel’s **parcel_id**, **land_use**, and **population** (people). **Always use the matching row in `parcels_people` by parcel_id** when the user names or asks about a specific parcel, lot, or predio. Also use `population_people` for neighborhood totals, sums by land use, and min/max/mean. Do **not** say population is unavailable unless those objects are empty or the parcel_id is not listed.
 - **Consumption vs parcel population:** The JSON includes `consumption_by_parcel_population_threshold` — for each threshold **N**, yearly consumption summed over parcels whose population is **strictly greater than N**, plus **percent_of_neighborhood_consumption** for both 0.09 and 0.1 m³/c scenarios. **Use this** for questions like "properties with more than 10 people," "parcels over 15 residents," or share of demand from high-occupancy parcels. Do **not** say this cannot be computed from the data if the relevant threshold key is present.
 - Demand by land use: Residential, Commercial, Mixed-use (counts and shares)
 - Two per-capita scenarios: **0.09 m³/c** (lower) vs **0.1 m³/c** (higher) per person per day — never call them "90 L" or "100 L" in your answer; use m³/c labels only
@@ -50,7 +50,7 @@ Rules:
 FINAL_INSTRUCTIONS = """
 ---
 Before you reply, verify:
-1. Every volume you cite is consistent with the JSON (`scenario_0_09_m3c`, `scenario_0_1_m3c`, `land_use_breakdown`, `population_people`, `consumption_by_parcel_population_threshold`, `forecast_yearly_totals_explanation`, `scenario_difference_yearly_m3`, `forecast_parameters`).
+1. Every volume and **per-parcel population** you cite is consistent with the JSON (`parcels_people`, `scenario_0_09_m3c`, `scenario_0_1_m3c`, `land_use_breakdown`, `population_people`, `consumption_by_parcel_population_threshold`, `forecast_yearly_totals_explanation`, `scenario_difference_yearly_m3`, `forecast_parameters`).
 2. You name scenarios as **0.09 m³/c** (lower) and **0.1 m³/c** (higher), not liters.
 3. Any forecast you mention uses the same **annual_growth_percent** and **horizon_years** as in `forecast_parameters`. If **forecast_parameters.how_set** explains that values came from the user's question, state that clearly (e.g. "at 3% annual growth over 5 years").
 4. If the question is clearly unrelated to this dashboard, answer in one short sentence declining and suggesting a water-demand question. Otherwise answer fully.
@@ -266,6 +266,16 @@ async def _build_context(
         "note": "Each parcel has an estimated population (people). Sums above are from the parcel database.",
     }
 
+    # Per-parcel rows so the model can answer "how many people at parcel X?" and avoid mixing parcels.
+    parcels_people = [
+        {
+            "parcel_id": p.parcel_id,
+            "land_use": p.land_use,
+            "population": int(p.population or 0),
+        }
+        for p in sorted(parcels, key=lambda x: (x.parcel_id or ""))
+    ]
+
     threshold_set = {5, 10, 15, 20, 25, 50}
     extra = _parse_population_threshold_from_question(user_message or "")
     if extra is not None:
@@ -287,6 +297,7 @@ async def _build_context(
     return json.dumps({
         "parcel_count": len(parcels),
         "population": total_pop,
+        "parcels_people": parcels_people,
         "population_people": population_people,
         "consumption_by_parcel_population_threshold": consumption_by_parcel_population_threshold,
         "forecast_parameters": {

@@ -13,8 +13,6 @@ dist-ssr
 *.local
 
 # Secrets — never commit
-.env
-.env.*
 !.env.example
 backend/.env
 
@@ -24,7 +22,6 @@ __pycache__/
 *.sqlite3
 
 # Editor directories and files
-.vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
@@ -33,3 +30,4 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+config.bat

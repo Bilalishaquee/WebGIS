@@ -28,13 +28,44 @@ def _normalize_land_use(s: str) -> str:
     raise ValueError(f"land_use must be one of Residential, Commercial, Mixed-use; got {v!r}")
 
 
+def _population_from_row(row: dict[str, Any]) -> Any:
+    """Resolve population from common EN/ES column names (handles mixed case in GeoJSON properties)."""
+    norm: dict[str, Any] = {}
+    for k, v in row.items():
+        if k is None:
+            continue
+        key = str(k).strip().lower().replace(" ", "_").replace("ó", "o").replace("ñ", "n")
+        norm[key] = v
+    for candidate in (
+        "population",
+        "pop",
+        "poblacion",
+        "habitantes",
+        "hab",
+        "num_personas",
+        "n_personas",
+        "personas",
+        "numhab",
+        "n_hab",
+        "no_habitantes",
+    ):
+        if candidate not in norm:
+            continue
+        val = norm[candidate]
+        if val is not None and str(val).strip() != "":
+            return val
+    return None
+
+
 def _row_to_parcel(row: dict[str, Any]) -> dict[str, Any]:
     """Convert a row dict to normalized parcel dict."""
     pid = str(row.get("parcel_id") or row.get("id") or "").strip()
     if not pid:
         raise ValueError("parcel_id is required")
     land_use = _normalize_land_use(str(row.get("land_use") or row.get("landUse") or ""))
-    pop = row.get("population")
+    pop = _population_from_row(row)
+    if pop is None:
+        pop = row.get("population")
     if pop is None:
         pop = row.get("pop")
     try:
@@ -78,6 +109,19 @@ def parse_csv(content: str) -> list[dict[str, Any]]:
             d["land_use"] = d["landuse"]
         if "population" not in d and "pop" in d:
             d["population"] = d["pop"]
+        for alt in (
+            "poblacion",
+            "población",
+            "habitantes",
+            "num_personas",
+            "n_personas",
+            "personas",
+            "n_hab",
+            "no_habitantes",
+        ):
+            if "population" not in d and alt in d:
+                d["population"] = d[alt]
+                break
         if "lat" not in d and "latitude" in d:
             d["lat"] = d["latitude"]
         if "lng" not in d and "longitude" in d:
