@@ -13,8 +13,6 @@ dist-ssr
 *.local
 
 # Secrets — never commit
-.env
-.env.*
 !.env.example
 backend/.env
 
@@ -33,3 +31,4 @@ __pycache__/
 *.njsproj
 *.sln
 *.sw?
+config.bat
